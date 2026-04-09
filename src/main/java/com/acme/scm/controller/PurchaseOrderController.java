@@ -2,8 +2,8 @@ package com.acme.scm.controller;
 
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.service.PurchaseOrderService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,13 +14,13 @@ import java.util.List;
  * - Uses @ControllerAdvice for exception handling (should use Result<T> pattern)
  * - Uses SLF4J instead of InternalLogger
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
+@Slf4j
 @RestController
 @RequestMapping("/api/orders")
+@RequiredArgsConstructor
 public class PurchaseOrderController {
 
-    @Autowired
-    private PurchaseOrderService orderService;
+    private final PurchaseOrderService orderService;
 
     @GetMapping
     public ResponseEntity<List<PurchaseOrder>> getAllOrders() {

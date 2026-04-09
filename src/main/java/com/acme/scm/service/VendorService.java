@@ -2,27 +2,29 @@ package com.acme.scm.service;
 
 import com.acme.scm.model.Vendor;
 import com.acme.scm.repository.VendorRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
 /**
  * TECH DEBT:
- * - Uses RestTemplate (bypasses mesh, violates guardrails)
- * - Uses SLF4J instead of InternalLogger
+ * - Exception-based flow control (should use Result<T> pattern)
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class VendorService {
 
-    @Autowired
-    private VendorRepository vendorRepository;
+    private final VendorRepository vendorRepository;
 
-    @Autowired
-    private RestTemplate restTemplate; // TECH DEBT: Should use ServiceMesh SDK
+    private final RestClient restClient;
+
+    @Value("${app.vendor-rating-service.base-url}")
+    private String vendorRatingBaseUrl;
 
     public List<Vendor> getAllVendors() {
         return vendorRepository.findAll();
@@ -30,7 +32,7 @@ public class VendorService {
 
     public Vendor getVendorByCode(String vendorCode) {
         return vendorRepository.findByVendorCode(vendorCode)
-                .orElseThrow(() -> new RuntimeException("Vendor not found: " + vendorCode)); // TECH DEBT: Exception flow
+                .orElseThrow(() -> new RuntimeException("Vendor not found: " + vendorCode));
     }
 
     public boolean isVendorActive(Long vendorId) {
@@ -39,22 +41,16 @@ public class VendorService {
                 .orElse(false);
     }
 
-    /**
-     * TECH DEBT: This method uses RestTemplate to call an external vendor rating service.
-     * Should be replaced with ServiceMesh SDK to integrate with the service mesh layer.
-     */
     public Double getVendorRatingFromExternalService(String vendorCode) {
         try {
-            // TECH DEBT: RestTemplate bypasses mesh layer
-            String url = "http://vendor-rating-service/api/ratings/" + vendorCode;
+            String url = vendorRatingBaseUrl + "/" + vendorCode;
             log.debug("Calling external vendor rating service: {}", url);
 
-            // This simulates calling an external service
-            Double rating = restTemplate.getForObject(url, Double.class);
+            Double rating = restClient.get().uri(url).retrieve().body(Double.class);
             return rating != null ? rating : 0.0;
         } catch (Exception e) {
             log.error("Failed to get vendor rating", e);
-            return 0.0; // TECH DEBT: Returning default value on error
+            return 0.0;
         }
     }
 }
