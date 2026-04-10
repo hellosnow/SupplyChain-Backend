@@ -1,0 +1,464 @@
+{
+  "metadata": {
+    "tool": "AppCAT",
+    "toolVersion": "1.0.0",
+    "timestamp": "2026-04-10T02:12:28Z",
+    "projectName": "supplychain-backend",
+    "projectPath": "/home/runner/work/SupplyChain-Backend/SupplyChain-Backend",
+    "targetPlatform": "Azure",
+    "language": "Java",
+    "framework": "Spring Boot"
+  },
+  "summary": {
+    "totalIssues": 14,
+    "criticalIssues": 2,
+    "majorIssues": 7,
+    "minorIssues": 5,
+    "totalFiles": 15,
+    "analyzedFiles": 15,
+    "cloudReadinessScore": 38
+  },
+  "projectInfo": {
+    "groupId": "com.acme.scm",
+    "artifactId": "supplychain-backend",
+    "version": "1.0.0-LEGACY",
+    "javaVersion": "8",
+    "springBootVersion": "2.7.18",
+    "packagingType": "jar",
+    "sourceFiles": 15,
+    "dependencies": [
+      {
+        "groupId": "org.springframework.boot",
+        "artifactId": "spring-boot-starter-parent",
+        "version": "2.7.18",
+        "scope": "parent"
+      },
+      {
+        "groupId": "org.springframework.boot",
+        "artifactId": "spring-boot-starter-web",
+        "version": "2.7.18",
+        "scope": "compile"
+      },
+      {
+        "groupId": "org.springframework.boot",
+        "artifactId": "spring-boot-starter-data-jpa",
+        "version": "2.7.18",
+        "scope": "compile"
+      },
+      {
+        "groupId": "mysql",
+        "artifactId": "mysql-connector-java",
+        "version": "8.0.33",
+        "scope": "compile"
+      },
+      {
+        "groupId": "org.springframework.boot",
+        "artifactId": "spring-boot-starter-amqp",
+        "version": "2.7.18",
+        "scope": "compile"
+      },
+      {
+        "groupId": "org.projectlombok",
+        "artifactId": "lombok",
+        "version": "managed",
+        "scope": "compile",
+        "optional": true
+      },
+      {
+        "groupId": "org.springframework.boot",
+        "artifactId": "spring-boot-starter-validation",
+        "version": "2.7.18",
+        "scope": "compile"
+      },
+      {
+        "groupId": "org.springframework.boot",
+        "artifactId": "spring-boot-starter-test",
+        "version": "2.7.18",
+        "scope": "test"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "id": "ISSUE-001",
+      "severity": "critical",
+      "category": "RuntimeVersion",
+      "title": "Java version 8 is outdated and not LTS",
+      "description": "The application uses Java 8, which is no longer in active support. Java 17 is the current LTS version and is required for Spring Boot 3.x. Upgrading is required for modern cloud deployments and to access performance improvements and security fixes.",
+      "recommendation": "Upgrade Java source and target compiler settings from 8 to 17. Update pom.xml: set <java.version>17</java.version>, <maven.compiler.source>17</maven.compiler.source>, and <maven.compiler.target>17</maven.compiler.target>.",
+      "effort": "medium",
+      "affectedFiles": [
+        "pom.xml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "pom.xml",
+          "line": 24,
+          "code": "<java.version>8</java.version>"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-002",
+      "severity": "critical",
+      "category": "FrameworkVersion",
+      "title": "Spring Boot 2.7.18 is end-of-life",
+      "description": "Spring Boot 2.7.x reached end-of-life in November 2023. The application must be upgraded to Spring Boot 3.x for continued security patches, compliance, and compatibility with modern cloud infrastructure. Spring Boot 3 requires Java 17 and uses Jakarta EE 9+ namespaces.",
+      "recommendation": "Upgrade to Spring Boot 3.2.x or later. This requires: (1) upgrading Java to 17+, (2) migrating all javax.* imports to jakarta.*, (3) updating any deprecated APIs.",
+      "effort": "high",
+      "affectedFiles": [
+        "pom.xml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "pom.xml",
+          "line": 19,
+          "code": "<version>2.7.18</version>"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-003",
+      "severity": "major",
+      "category": "APICompatibility",
+      "title": "javax.persistence namespace must be migrated to jakarta.persistence",
+      "description": "All JPA entity classes use javax.persistence.* imports from Java EE 8. Spring Boot 3 requires Jakarta EE 10 which uses the jakarta.persistence.* namespace. These imports must be updated in all entity classes.",
+      "recommendation": "Replace all 'import javax.persistence.*' with 'import jakarta.persistence.*' in entity classes: Vendor.java, Inventory.java, PurchaseOrder.java.",
+      "effort": "low",
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/model/Vendor.java",
+        "src/main/java/com/acme/scm/model/Inventory.java",
+        "src/main/java/com/acme/scm/model/PurchaseOrder.java"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/java/com/acme/scm/model/Vendor.java",
+          "line": 7,
+          "code": "import javax.persistence.*;"
+        },
+        {
+          "file": "src/main/java/com/acme/scm/model/Inventory.java",
+          "line": 7,
+          "code": "import javax.persistence.*;"
+        },
+        {
+          "file": "src/main/java/com/acme/scm/model/PurchaseOrder.java",
+          "line": 7,
+          "code": "import javax.persistence.*;"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-004",
+      "severity": "major",
+      "category": "Security",
+      "title": "Hardcoded credentials in application.yml",
+      "description": "Database and RabbitMQ credentials are hardcoded in the application.yml configuration file. This is a security risk as credentials may be exposed through version control, logs, or error messages. All secrets must be externalized.",
+      "recommendation": "Move all secrets (database username/password, RabbitMQ credentials) to Azure Key Vault. Use Spring Boot's Azure Key Vault integration (azure-spring-boot-starter-keyvault-secrets) to automatically resolve secrets at runtime. Remove hardcoded credentials from application.yml.",
+      "effort": "medium",
+      "affectedFiles": [
+        "src/main/resources/application.yml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/resources/application.yml",
+          "line": 12,
+          "code": "username: root\n    password: root"
+        },
+        {
+          "file": "src/main/resources/application.yml",
+          "line": 25,
+          "code": "username: guest\n    password: guest"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-005",
+      "severity": "major",
+      "category": "CloudMigration",
+      "title": "RabbitMQ should be migrated to Azure Service Bus",
+      "description": "The application uses RabbitMQ (AMQP) as its messaging broker with hardcoded host and credentials. For Azure cloud deployments, Azure Service Bus provides a managed, scalable messaging service with enterprise features including dead-lettering, sessions, and RBAC with Managed Identity.",
+      "recommendation": "Migrate messaging from RabbitMQ to Azure Service Bus. Replace spring-boot-starter-amqp with spring-cloud-azure-starter-servicebus. Update AppConfig.java to use ServiceBusClientBuilder. Consider using azure-spring-boot-starter-servicebus-jms for easier migration.",
+      "effort": "high",
+      "affectedFiles": [
+        "pom.xml",
+        "src/main/java/com/acme/scm/config/AppConfig.java",
+        "src/main/java/com/acme/scm/service/InventoryService.java",
+        "src/main/java/com/acme/scm/service/PurchaseOrderService.java",
+        "src/main/resources/application.yml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/java/com/acme/scm/config/AppConfig.java",
+          "line": 35,
+          "code": "public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory)"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-006",
+      "severity": "major",
+      "category": "CloudMigration",
+      "title": "MySQL should use Azure Database for MySQL with Managed Identity",
+      "description": "The application connects to a local MySQL instance using hardcoded credentials over an insecure connection (useSSL=false). For Azure deployments, it should use Azure Database for MySQL – Flexible Server with Managed Identity authentication to eliminate credentials.",
+      "recommendation": "Provision Azure Database for MySQL Flexible Server. Enable Managed Identity authentication on the database. Use spring-cloud-azure-starter-jdbc-mysql to configure passwordless authentication. Update spring.datasource.url to point to the Azure MySQL endpoint and remove username/password.",
+      "effort": "medium",
+      "affectedFiles": [
+        "src/main/resources/application.yml",
+        "pom.xml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/resources/application.yml",
+          "line": 9,
+          "code": "url: jdbc:mysql://mysql:3306/supplychain?useSSL=false&serverTimezone=UTC"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-007",
+      "severity": "major",
+      "category": "BestPractice",
+      "title": "RestTemplate usage bypasses service mesh",
+      "description": "VendorService uses Spring's RestTemplate to call an external vendor rating service. RestTemplate is deprecated in Spring 5+ in favor of WebClient. Additionally, direct HTTP calls bypass the service mesh layer, preventing observability, circuit breaking, and retries.",
+      "recommendation": "Replace RestTemplate with WebClient (reactive) or the organization's ServiceMesh SDK. If using WebClient, add spring-boot-starter-webflux or spring-webflux dependency. Configure timeouts, retry logic, and circuit breakers.",
+      "effort": "medium",
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/config/AppConfig.java",
+        "src/main/java/com/acme/scm/service/VendorService.java"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/java/com/acme/scm/service/VendorService.java",
+          "line": 21,
+          "code": "@Autowired\n    private RestTemplate restTemplate;"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-008",
+      "severity": "major",
+      "category": "BestPractice",
+      "title": "Exception-based flow control should be replaced with Result pattern",
+      "description": "Multiple service methods use exception throwing for business logic flow control (e.g., throwing RuntimeException when entity not found, IllegalStateException for business rule violations). This makes error handling brittle and harder to compose.",
+      "recommendation": "Adopt a Result<T> or Either<Error, T> pattern for business logic outcomes. Use Optional<T> for nullable returns. Reserve exceptions for truly exceptional/unrecoverable conditions.",
+      "effort": "medium",
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/service/InventoryService.java",
+        "src/main/java/com/acme/scm/service/PurchaseOrderService.java",
+        "src/main/java/com/acme/scm/service/VendorService.java"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/java/com/acme/scm/service/InventoryService.java",
+          "line": 33,
+          "code": ".orElseThrow(() -> new RuntimeException(\"Inventory not found: \" + sku))"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-009",
+      "severity": "minor",
+      "category": "Deprecated",
+      "title": "Deprecated MySQL connector group ID",
+      "description": "The MySQL connector dependency uses the deprecated group ID 'mysql'. The official connector has been moved to 'com.mysql' group. Version 8.0.33 is also outdated.",
+      "recommendation": "Update pom.xml to use: groupId 'com.mysql', artifactId 'mysql-connector-j', and the latest version compatible with the target Spring Boot version.",
+      "effort": "low",
+      "affectedFiles": [
+        "pom.xml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "pom.xml",
+          "line": 44,
+          "code": "<groupId>mysql</groupId>\n            <artifactId>mysql-connector-java</artifactId>"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-010",
+      "severity": "minor",
+      "category": "Deprecated",
+      "title": "Deprecated Hibernate MySQL5 dialect",
+      "description": "The application configures org.hibernate.dialect.MySQL5InnoDBDialect which is deprecated and removed in Hibernate 6 (used by Spring Boot 3). Spring Boot 3 auto-detects the correct dialect for MySQL.",
+      "recommendation": "Remove the explicit dialect configuration 'org.hibernate.dialect.MySQL5InnoDBDialect' from application.yml. Spring Boot 3 with Hibernate 6 will auto-detect the appropriate dialect for MySQL 8+.",
+      "effort": "low",
+      "affectedFiles": [
+        "src/main/resources/application.yml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/resources/application.yml",
+          "line": 21,
+          "code": "dialect: org.hibernate.dialect.MySQL5InnoDBDialect"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-011",
+      "severity": "minor",
+      "category": "BestPractice",
+      "title": "SLF4J Lombok @Slf4j used instead of structured logging",
+      "description": "All classes use Lombok's @Slf4j for logging. While functional, the application lacks structured/contextual logging fields, making it difficult to trace requests and correlate logs in a cloud environment.",
+      "recommendation": "Adopt structured logging with a context propagation library. Add correlation IDs (trace/span IDs) to all log statements. Consider using Spring Cloud Sleuth or Micrometer Tracing for distributed tracing in Azure.",
+      "effort": "medium",
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/controller/InventoryController.java",
+        "src/main/java/com/acme/scm/controller/PurchaseOrderController.java",
+        "src/main/java/com/acme/scm/controller/VendorController.java",
+        "src/main/java/com/acme/scm/service/InventoryService.java",
+        "src/main/java/com/acme/scm/service/PurchaseOrderService.java",
+        "src/main/java/com/acme/scm/service/VendorService.java"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/java/com/acme/scm/controller/InventoryController.java",
+          "line": 13,
+          "code": "@Slf4j"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-012",
+      "severity": "minor",
+      "category": "Security",
+      "title": "JPA DDL auto-update should not be used in production",
+      "description": "spring.jpa.hibernate.ddl-auto is set to 'update', which allows Hibernate to automatically modify the database schema at application startup. This is dangerous in production environments and can cause data loss or schema corruption.",
+      "recommendation": "Set spring.jpa.hibernate.ddl-auto to 'validate' or 'none' for production. Use a dedicated schema migration tool such as Flyway or Liquibase for controlled, versioned schema changes.",
+      "effort": "low",
+      "affectedFiles": [
+        "src/main/resources/application.yml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/resources/application.yml",
+          "line": 16,
+          "code": "ddl-auto: update"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-013",
+      "severity": "minor",
+      "category": "Security",
+      "title": "SSL disabled for MySQL connection",
+      "description": "The JDBC connection URL contains 'useSSL=false', disabling SSL/TLS encryption for database traffic. This exposes data in transit to potential interception.",
+      "recommendation": "Enable SSL for the MySQL connection. When using Azure Database for MySQL, SSL is enabled by default. Update the connection URL to require SSL: 'useSSL=true&requireSSL=true&sslMode=REQUIRED'.",
+      "effort": "low",
+      "affectedFiles": [
+        "src/main/resources/application.yml"
+      ],
+      "codeSnippets": [
+        {
+          "file": "src/main/resources/application.yml",
+          "line": 9,
+          "code": "url: jdbc:mysql://mysql:3306/supplychain?useSSL=false&serverTimezone=UTC"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-014",
+      "severity": "minor",
+      "category": "Containerization",
+      "title": "Dockerfile uses generic base image without version pinning",
+      "description": "The Dockerfile should be reviewed to ensure it uses a non-root user, pins the base image to a specific digest, and follows container security best practices for production Azure Container deployments.",
+      "recommendation": "Review Dockerfile to: use eclipse-temurin:17-jre-alpine as base after Java upgrade, run as non-root user (add USER 1000), pin base image digests for reproducibility, and add health check instructions.",
+      "effort": "low",
+      "affectedFiles": [
+        "Dockerfile"
+      ],
+      "codeSnippets": []
+    }
+  ],
+  "technologiesDetected": [
+    {
+      "name": "Java",
+      "version": "8",
+      "category": "language",
+      "cloudReady": false
+    },
+    {
+      "name": "Spring Boot",
+      "version": "2.7.18",
+      "category": "framework",
+      "cloudReady": false
+    },
+    {
+      "name": "Spring Data JPA",
+      "version": "2.7.18",
+      "category": "persistence",
+      "cloudReady": true
+    },
+    {
+      "name": "Spring AMQP",
+      "version": "2.7.18",
+      "category": "messaging",
+      "cloudReady": false,
+      "note": "Use Azure Service Bus instead of RabbitMQ"
+    },
+    {
+      "name": "MySQL Connector",
+      "version": "8.0.33",
+      "category": "database-driver",
+      "cloudReady": false,
+      "note": "Upgrade to com.mysql:mysql-connector-j and use Azure DB for MySQL"
+    },
+    {
+      "name": "Hibernate",
+      "version": "5.x",
+      "category": "orm",
+      "cloudReady": false,
+      "note": "Upgrade to Hibernate 6 with Spring Boot 3"
+    },
+    {
+      "name": "Lombok",
+      "version": "managed",
+      "category": "utility",
+      "cloudReady": true
+    },
+    {
+      "name": "Maven",
+      "version": "3.x",
+      "category": "build",
+      "cloudReady": true
+    },
+    {
+      "name": "Docker",
+      "version": "N/A",
+      "category": "containerization",
+      "cloudReady": true
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": 1,
+      "title": "Upgrade to Java 17 and Spring Boot 3.2.x",
+      "description": "The most impactful change is upgrading the runtime and framework. Java 17 is the LTS version required by Spring Boot 3. This migration enables all subsequent modernization steps and unlocks virtual threads, records, pattern matching, and other modern language features.",
+      "estimatedEffort": "3-5 days"
+    },
+    {
+      "priority": 2,
+      "title": "Migrate to Azure Service Bus",
+      "description": "Replace RabbitMQ with Azure Service Bus for managed, scalable messaging. This eliminates infrastructure management overhead and enables RBAC with Managed Identity, removing the need for hardcoded credentials.",
+      "estimatedEffort": "2-3 days"
+    },
+    {
+      "priority": 3,
+      "title": "Migrate to Azure Database for MySQL with Managed Identity",
+      "description": "Move from self-hosted MySQL to Azure Database for MySQL – Flexible Server. Enable Managed Identity authentication to eliminate database credentials from configuration files entirely.",
+      "estimatedEffort": "1-2 days"
+    },
+    {
+      "priority": 4,
+      "title": "Externalize all secrets to Azure Key Vault",
+      "description": "Move all remaining credentials and configuration secrets to Azure Key Vault. Integrate using spring-cloud-azure-starter-keyvault-secrets for automatic secret resolution.",
+      "estimatedEffort": "1 day"
+    },
+    {
+      "priority": 5,
+      "title": "Replace RestTemplate with WebClient",
+      "description": "Modernize HTTP client usage by replacing the deprecated RestTemplate with Spring WebClient, with proper timeout, retry, and circuit breaker configuration.",
+      "estimatedEffort": "0.5 days"
+    }
+  ]
+}
