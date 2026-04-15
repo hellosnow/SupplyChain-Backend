@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-java-spring-boot",
+      "description": "Upgrade Java from 8 to 17 LTS and Spring Boot from 2.7.18 to 3.x",
+      "reason": "The playbook mandates Java 17 LTS as the internal target and requires all Spring Boot 2.x applications to be upgraded to Spring Boot 3.x. Java 8 and Spring Boot 2.x are end-of-life for internal use. This upgrade is a prerequisite for all subsequent modernization tasks.",
+      "requirements": "Upgrade the project from Java 8 to Java 17 LTS and from Spring Boot 2.7.18 to the latest stable Spring Boot 3.x release. Update pom.xml compiler source/target, parent version, and all affected dependencies. The upgraded project must build successfully and all existing tests must pass.",
+      "environmentConfiguration": null,
+      "skills": [
+        {
+          "name": "create-java-upgrade-plan",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-http-client-to-servicemesh",
+      "description": "Migrate all direct HTTP inter-service calls to ServiceMesh SDK",
+      "reason": "The playbook mandates that all service-to-service communication use the ServiceMesh SDK (com.acme.mesh.ServiceMesh). The current implementation uses RestTemplate directly in VendorService to call the external vendor-rating-service, bypassing the mesh layer.",
+      "requirements": "Replace the RestTemplate bean in AppConfig and its usage in VendorService.getVendorRatingFromExternalService() with the ServiceMesh SDK (com.acme.mesh.ServiceMesh). All HTTP calls to the vendor-rating-service must go through the mesh. Remove the RestTemplate bean configuration once migrated.",
+      "environmentConfiguration": null,
+      "skills": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-logging-to-internallogger",
+      "description": "Migrate SLF4J logging to InternalLogger",
+      "reason": "The playbook designates InternalLogger (com.acme.logging.InternalLogger) as the sole permitted logging framework. The current codebase uses SLF4J via Lombok @Slf4j annotations across all service and controller classes.",
+      "requirements": "Replace all @Slf4j annotations and log.* calls with InternalLogger (com.acme.logging.InternalLogger) across all controllers (VendorController, PurchaseOrderController, InventoryController) and services (VendorService, PurchaseOrderService, InventoryService). Remove any SLF4J / Logback-specific configuration and dependencies from pom.xml once no longer needed.",
+      "environmentConfiguration": null,
+      "skills": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-exception-handling-to-result-pattern",
+      "description": "Replace exception-based business logic flow control with Result<T> pattern",
+      "reason": "The playbook prohibits throwing exceptions for business logic flow control. The codebase currently throws IllegalArgumentException, IllegalStateException, and RuntimeException to signal validation failures and business rule violations in PurchaseOrderService, VendorService, and InventoryService.",
+      "requirements": "Replace all exception-based business rule flow control in PurchaseOrderService, VendorService, and InventoryService with the Result<T> pattern (com.acme.commons.Result). Update the corresponding controller methods (VendorController, PurchaseOrderController, InventoryController) to unwrap and respond to Result<T> return values. Not-found cases currently using orElseThrow should also return a failed Result.",
+      "environmentConfiguration": null,
+      "skills": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "005-transform-credentials-to-keyvault",
+      "description": "Migrate hardcoded credentials to Azure Key Vault",
+      "reason": "The playbook prohibits plaintext credentials in application configuration. application.yml currently contains hardcoded MySQL credentials (username: root, password: root) and RabbitMQ credentials (username: guest, password: guest), which violates the playbook's security requirements.",
+      "requirements": "Remove all hardcoded credentials from application.yml (MySQL username/password and RabbitMQ username/password). Migrate secret access to Azure Key Vault using Spring Cloud Azure Key Vault starter or Managed Identity. The application must retrieve these secrets securely at runtime without any plaintext credentials in source-controlled configuration files.",
+      "environmentConfiguration": null,
+      "skills": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "006-containerization",
+      "description": "Containerize application for AKS deployment",
+      "reason": "The playbook designates Azure Kubernetes Service (AKS) as the default compute platform for all services. AKS requires a container image. The project has an existing Dockerfile that should be verified and updated for production readiness.",
+      "requirements": "Verify and update the existing Dockerfile at the repository root to produce a production-ready container image for the SupplyChain Backend. Ensure the image is suitable for deployment to Azure Kubernetes Service (AKS) and reflects the upgraded Java 17 runtime.",
+      "environmentConfiguration": null,
+      "dockerfilePath": "Dockerfile"
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-236",
+    "projectName": "SupplyChain Backend",
+    "language": "java",
+    "createdAt": "2026-04-15T06:36:51Z",
+    "version": "1.0"
+  }
+}

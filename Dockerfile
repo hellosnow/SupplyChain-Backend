@@ -1,9 +1,4 @@
-# TECH DEBT: Uses old Java 8 base image
-# Should use mcr.microsoft.com/openjdk/jdk:17-ubuntu (build)
-# and mcr.microsoft.com/openjdk/jdk:17-distroless (runtime)
-# per guardrails requirements
-
-FROM maven:3.8-openjdk-8 AS build
+﻿FROM mcr.microsoft.com/openjdk/jdk:17-ubuntu AS build
 
 WORKDIR /app
 
@@ -13,7 +8,7 @@ RUN mvn dependency:go-offline
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:8-jre
+FROM mcr.microsoft.com/openjdk/jdk:17-distroless
 
 WORKDIR /app
 
