@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "transform",
+      "id": "001-transform-http-client-to-servicemesh",
+      "description": "Migrate all direct HTTP inter-service calls to ServiceMesh SDK",
+      "reason": "The playbook mandates that all service-to-service communication use the ServiceMesh SDK (com.acme.mesh.ServiceMesh). The current implementation uses Spring RestClient directly in VendorService to call the external vendor-rating-service, bypassing the mesh.",
+      "requirements": "Replace the RestClient bean in AppConfig and its usage in VendorService.getVendorRatingFromExternalService() with the ServiceMesh SDK (com.acme.mesh.ServiceMesh). All HTTP calls to the vendor-rating-service must go through the mesh. Remove the RestClient bean configuration once migrated.",
+      "environmentConfiguration": null,
+      "skills": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-logging-to-internallogger",
+      "description": "Migrate SLF4J logging to InternalLogger",
+      "reason": "The playbook designates InternalLogger (com.acme.logging.InternalLogger) as the sole permitted logging framework. The current codebase uses SLF4J via Lombok @Slf4j annotations across all service and controller classes.",
+      "requirements": "Replace all @Slf4j annotations and log.* calls with InternalLogger (com.acme.logging.InternalLogger) across all controllers (VendorController, PurchaseOrderController, InventoryController) and services (VendorService, PurchaseOrderService, InventoryService). Remove the logback-spring.xml configuration file and the logstash-logback-encoder dependency from pom.xml once no longer needed.",
+      "environmentConfiguration": null,
+      "skills": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-exception-handling-to-result-pattern",
+      "description": "Replace exception-based business logic flow control with Result<T> pattern",
+      "reason": "The playbook prohibits throwing exceptions for business logic flow control. The codebase currently throws IllegalArgumentException, IllegalStateException, and RuntimeException to signal validation failures and business rule violations in PurchaseOrderService, VendorService, and InventoryService.",
+      "requirements": "Replace all exception-based business rule flow control in PurchaseOrderService, VendorService, and InventoryService with the Result<T> pattern (com.acme.commons.Result). Update the corresponding controller methods (VendorController, PurchaseOrderController, InventoryController) to unwrap and respond to Result<T> return values. Not-found cases currently using orElseThrow should also return a failed Result.",
+      "environmentConfiguration": null,
+      "skills": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "004-containerization",
+      "description": "Containerize application for AKS deployment",
+      "reason": "The playbook designates Azure Kubernetes Service (AKS) as the default compute platform for all services. AKS requires a container image. The project has an existing Dockerfile that should be verified and updated for production readiness.",
+      "requirements": "Verify and update the existing Dockerfile at the repository root to produce a production-ready container image for the SupplyChain Backend. Ensure the image is suitable for deployment to Azure Kubernetes Service (AKS).",
+      "environmentConfiguration": null,
+      "dockerfilePath": "Dockerfile"
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-283",
+    "projectName": "SupplyChain Backend",
+    "language": "java",
+    "createdAt": "2026-04-15T05:51:22Z",
+    "version": "1.0"
+  }
+}
