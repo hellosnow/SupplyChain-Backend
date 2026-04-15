@@ -1,5 +1,6 @@
 package com.acme.scm.controller;
 
+import com.acme.commons.Result;
 import com.acme.logging.InternalLogger;
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.service.PurchaseOrderService;
@@ -30,9 +31,13 @@ public class PurchaseOrderController {
     }
 
     @GetMapping("/{orderNumber}")
-    public ResponseEntity<PurchaseOrder> getOrderByNumber(@PathVariable String orderNumber) {
+    public ResponseEntity<?> getOrderByNumber(@PathVariable String orderNumber) {
         logger.info("GET /api/orders/{} - Fetching order", orderNumber);
-        return ResponseEntity.ok(orderService.getOrderByNumber(orderNumber));
+        Result<PurchaseOrder> result = orderService.getOrderByNumber(orderNumber);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        }
+        return ResponseEntity.badRequest().body(result.getError());
     }
 
     @GetMapping("/pending")
@@ -42,18 +47,24 @@ public class PurchaseOrderController {
     }
 
     @PostMapping
-    public ResponseEntity<PurchaseOrder> createOrder(@RequestBody PurchaseOrder order) {
+    public ResponseEntity<?> createOrder(@RequestBody PurchaseOrder order) {
         logger.info("POST /api/orders - Creating new order: {}", order.getOrderNumber());
-        PurchaseOrder created = orderService.createOrder(order);
-        return ResponseEntity.ok(created);
+        Result<PurchaseOrder> result = orderService.createOrder(order);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        }
+        return ResponseEntity.badRequest().body(result.getError());
     }
 
     @PutMapping("/{orderNumber}/approve")
-    public ResponseEntity<PurchaseOrder> approveOrder(
+    public ResponseEntity<?> approveOrder(
             @PathVariable String orderNumber,
             @RequestParam String approvedBy) {
         logger.info("PUT /api/orders/{}/approve - Approving order by {}", orderNumber, approvedBy);
-        PurchaseOrder approved = orderService.approveOrder(orderNumber, approvedBy);
-        return ResponseEntity.ok(approved);
+        Result<PurchaseOrder> result = orderService.approveOrder(orderNumber, approvedBy);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        }
+        return ResponseEntity.badRequest().body(result.getError());
     }
 }

@@ -1,5 +1,6 @@
 package com.acme.scm.controller;
 
+import com.acme.commons.Result;
 import com.acme.logging.InternalLogger;
 import com.acme.scm.model.Inventory;
 import com.acme.scm.service.InventoryService;
@@ -25,9 +26,13 @@ public class InventoryController {
     }
 
     @GetMapping("/{sku}")
-    public ResponseEntity<Inventory> getInventoryBySku(@PathVariable String sku) {
+    public ResponseEntity<?> getInventoryBySku(@PathVariable String sku) {
         logger.info("GET /api/inventory/{} - Fetching inventory", sku);
-        return ResponseEntity.ok(inventoryService.getInventoryBySku(sku));
+        Result<Inventory> result = inventoryService.getInventoryBySku(sku);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        }
+        return ResponseEntity.badRequest().body(result.getError());
     }
 
     @GetMapping("/low-stock")

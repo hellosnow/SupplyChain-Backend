@@ -1,5 +1,6 @@
 package com.acme.scm.controller;
 
+import com.acme.commons.Result;
 import com.acme.logging.InternalLogger;
 import com.acme.scm.model.Vendor;
 import com.acme.scm.service.VendorService;
@@ -25,15 +26,22 @@ public class VendorController {
     }
 
     @GetMapping("/{vendorCode}")
-    public ResponseEntity<Vendor> getVendorByCode(@PathVariable String vendorCode) {
+    public ResponseEntity<?> getVendorByCode(@PathVariable String vendorCode) {
         logger.info("GET /api/vendors/{} - Fetching vendor", vendorCode);
-        return ResponseEntity.ok(vendorService.getVendorByCode(vendorCode));
+        Result<Vendor> result = vendorService.getVendorByCode(vendorCode);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        }
+        return ResponseEntity.badRequest().body(result.getError());
     }
 
     @GetMapping("/{vendorCode}/rating")
-    public ResponseEntity<Double> getVendorRating(@PathVariable String vendorCode) {
+    public ResponseEntity<?> getVendorRating(@PathVariable String vendorCode) {
         logger.info("GET /api/vendors/{}/rating - Fetching vendor rating", vendorCode);
-        Double rating = vendorService.getVendorRatingFromExternalService(vendorCode);
-        return ResponseEntity.ok(rating);
+        Result<Double> result = vendorService.getVendorRatingFromExternalService(vendorCode);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        }
+        return ResponseEntity.badRequest().body(result.getError());
     }
 }
