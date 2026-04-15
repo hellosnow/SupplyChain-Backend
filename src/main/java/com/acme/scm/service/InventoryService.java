@@ -2,7 +2,7 @@ package com.acme.scm.service;
 
 import com.acme.scm.model.Inventory;
 import com.acme.scm.repository.InventoryRepository;
-import lombok.extern.slf4j.Slf4j;
+import com.acme.logging.InternalLogger;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,9 +16,10 @@ import java.util.stream.Collectors;
  * - Uses SLF4J instead of InternalLogger
  * - Uses RabbitMQ directly instead of custom messaging API
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
 @Service
 public class InventoryService {
+
+    private static final InternalLogger logger = InternalLogger.getLogger(InventoryService.class);
 
     @Autowired
     private InventoryRepository inventoryRepository;
@@ -48,15 +49,15 @@ public class InventoryService {
         List<Inventory> lowStockItems = getLowStockItems();
 
         if (!lowStockItems.isEmpty()) {
-            log.warn("Found {} low stock items", lowStockItems.size());
+            logger.warn("Found {} low stock items", lowStockItems.size());
 
             // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
             for (Inventory item : lowStockItems) {
                 try {
                     rabbitTemplate.convertAndSend(inventoryAlertQueue, item);
-                    log.info("Low stock alert sent for SKU: {}", item.getSku());
+                    logger.info("Low stock alert sent for SKU: {}", item.getSku());
                 } catch (Exception e) {
-                    log.error("Failed to send inventory alert for SKU: {}", item.getSku(), e);
+                    logger.error("Failed to send inventory alert for SKU: {}", item.getSku(), e);
                 }
             }
         }

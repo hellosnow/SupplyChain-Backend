@@ -2,7 +2,7 @@ package com.acme.scm.service;
 
 import com.acme.scm.model.Vendor;
 import com.acme.scm.repository.VendorRepository;
-import lombok.extern.slf4j.Slf4j;
+import com.acme.logging.InternalLogger;
 import com.acme.mesh.ServiceMesh;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,9 +13,10 @@ import java.util.List;
  * TECH DEBT:
  * - Uses SLF4J instead of InternalLogger
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
 @Service
 public class VendorService {
+
+    private static final InternalLogger logger = InternalLogger.getLogger(VendorService.class);
 
     @Autowired
     private VendorRepository vendorRepository;
@@ -45,11 +46,11 @@ public class VendorService {
      */
     public Double getVendorRatingFromExternalService(String vendorCode) {
         try {
-            log.debug("Calling external vendor rating service via ServiceMesh for vendorCode: {}", vendorCode);
+            logger.debug("Calling external vendor rating service via ServiceMesh for vendorCode: {}", vendorCode);
             Double rating = serviceMesh.call("vendor-rating-service", "/api/ratings/" + vendorCode, Double.class);
             return rating != null ? rating : 0.0;
         } catch (Exception e) {
-            log.error("Failed to get vendor rating", e);
+            logger.error("Failed to get vendor rating", e);
             return 0.0;
         }
     }

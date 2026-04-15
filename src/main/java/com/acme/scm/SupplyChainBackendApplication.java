@@ -1,5 +1,6 @@
 package com.acme.scm;
 
+import com.acme.logging.InternalLogger;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -18,11 +19,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class SupplyChainBackendApplication {
 
+    private static final InternalLogger logger = InternalLogger.getLogger(SupplyChainBackendApplication.class);
+
     public static void main(String[] args) {
         SpringApplication.run(SupplyChainBackendApplication.class, args);
-        System.out.println("========================================");
-        System.out.println("Supply Chain Backend API Started");
-        System.out.println("API Docs: http://localhost:8080/api");
-        System.out.println("========================================");
+        logger.info("========================================");
+        logger.info("Supply Chain Backend API Started");
+        logger.info("API Docs: http://localhost:8080/api");
+        logger.info("========================================");
     }
 }
