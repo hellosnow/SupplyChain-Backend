@@ -1,0 +1,30 @@
+# Version control
+.git/
+.gitignore
+.github/
+
+# Build output (rebuilt inside Docker — never copy local target/ into the image)
+target/
+
+# IDE and editor artefacts
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# Maven wrapper cache (not present in this project, but safe to exclude)
+.mvn/
+
+# Documentation — not needed at runtime
+*.md
+docs/
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# Test reports
+surefire-reports/
