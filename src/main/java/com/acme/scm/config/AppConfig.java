@@ -7,11 +7,10 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestTemplate;
+import com.acme.mesh.ServiceMesh;
 
 /**
  * TECH DEBT:
- * - RestTemplate bean (should use ServiceMesh SDK instead)
  * - RabbitMQ configuration (should migrate to Azure Service Bus with custom messaging API)
  */
 @Configuration
@@ -27,13 +26,12 @@ public class AppConfig {
     private String approvalPendingQueue;
 
     /**
-     * TECH DEBT: RestTemplate bypasses the service mesh layer.
-     * Should be replaced with ServiceMesh SDK (com.acme.mesh.ServiceMesh)
-     * per guardrails requirements.
+     * ServiceMesh bean for standardized service-to-service communication
+     * per guardrails requirements (com.acme.mesh.ServiceMesh).
      */
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    public ServiceMesh serviceMesh() {
+        return new ServiceMesh();
     }
 
     /**

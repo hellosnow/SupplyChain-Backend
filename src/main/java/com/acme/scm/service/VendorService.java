@@ -1,11 +1,11 @@
 package com.acme.scm.service;
 
+import com.acme.mesh.ServiceMesh;
 import com.acme.scm.model.Vendor;
 import com.acme.scm.repository.VendorRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ public class VendorService {
     private VendorRepository vendorRepository;
 
     @Autowired
-    private RestTemplate restTemplate; // TECH DEBT: Should use ServiceMesh SDK
+    private ServiceMesh serviceMesh;
 
     public List<Vendor> getAllVendors() {
         return vendorRepository.findAll();
@@ -40,17 +40,13 @@ public class VendorService {
     }
 
     /**
-     * TECH DEBT: This method uses RestTemplate to call an external vendor rating service.
-     * Should be replaced with ServiceMesh SDK to integrate with the service mesh layer.
+     * Calls the external vendor rating service through the ServiceMesh SDK.
      */
     public Double getVendorRatingFromExternalService(String vendorCode) {
         try {
-            // TECH DEBT: RestTemplate bypasses mesh layer
-            String url = "http://vendor-rating-service/api/ratings/" + vendorCode;
-            log.debug("Calling external vendor rating service: {}", url);
+            log.debug("Calling vendor rating service through mesh for vendorCode: {}", vendorCode);
 
-            // This simulates calling an external service
-            Double rating = restTemplate.getForObject(url, Double.class);
+            Double rating = serviceMesh.call("vendor-rating-service", "/api/ratings/" + vendorCode, Double.class);
             return rating != null ? rating : 0.0;
         } catch (Exception e) {
             log.error("Failed to get vendor rating", e);
