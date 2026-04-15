@@ -1,8 +1,8 @@
 package com.acme.scm.service;
 
+import com.acme.logging.InternalLogger;
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.repository.PurchaseOrderRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +17,10 @@ import java.util.List;
  * - Uses exception-based flow control (violates guardrails)
  * - Uses RabbitMQ directly instead of custom messaging API (should migrate to Azure Service Bus)
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
 @Service
 public class PurchaseOrderService {
+
+    private static final InternalLogger logger = InternalLogger.getLogger(PurchaseOrderService.class);
 
     @Autowired
     private PurchaseOrderRepository orderRepository;
@@ -35,7 +36,7 @@ public class PurchaseOrderService {
 
     @Transactional
     public PurchaseOrder createOrder(PurchaseOrder order) {
-        log.info("Creating purchase order: {}", order.getOrderNumber());
+        logger.info("Creating purchase order: {}", order.getOrderNumber());
 
         // TECH DEBT: Exception-based flow control (should use Result<T> pattern)
         if (order.getTotalAmount().doubleValue() <= 0) {
@@ -52,9 +53,9 @@ public class PurchaseOrderService {
         // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
         try {
             rabbitTemplate.convertAndSend(orderCreatedQueue, savedOrder);
-            log.info("Order created notification sent to queue: {}", orderCreatedQueue);
+            logger.info("Order created notification sent to queue: {}", orderCreatedQueue);
         } catch (Exception e) {
-            log.error("Failed to send order notification", e);
+            logger.error("Failed to send order notification", e);
             // TECH DEBT: Swallowing exception
         }
 
