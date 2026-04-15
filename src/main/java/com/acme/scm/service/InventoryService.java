@@ -1,5 +1,6 @@
 package com.acme.scm.service;
 
+import com.acme.commons.Result;
 import com.acme.scm.model.Inventory;
 import com.acme.scm.repository.InventoryRepository;
 import com.acme.logging.InternalLogger;
@@ -34,9 +35,10 @@ public class InventoryService {
         return inventoryRepository.findAll();
     }
 
-    public Inventory getInventoryBySku(String sku) {
+    public Result<Inventory> getInventoryBySku(String sku) {
         return inventoryRepository.findBySku(sku)
-                .orElseThrow(() -> new RuntimeException("Inventory not found: " + sku)); // TECH DEBT: Exception flow
+                .map(Result::success)
+                .orElse(Result.failure("Inventory not found: " + sku));
     }
 
     public List<Inventory> getLowStockItems() {

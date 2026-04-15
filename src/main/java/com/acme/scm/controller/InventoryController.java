@@ -1,9 +1,11 @@
 package com.acme.scm.controller;
 
+import com.acme.commons.Result;
 import com.acme.scm.model.Inventory;
 import com.acme.scm.service.InventoryService;
 import com.acme.logging.InternalLogger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +29,13 @@ public class InventoryController {
     @GetMapping("/{sku}")
     public ResponseEntity<Inventory> getInventoryBySku(@PathVariable String sku) {
         logger.info("GET /api/inventory/{} - Fetching inventory", sku);
-        return ResponseEntity.ok(inventoryService.getInventoryBySku(sku));
+        Result<Inventory> result = inventoryService.getInventoryBySku(sku);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        } else {
+            logger.warn("Inventory not found for SKU: {}", sku);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/low-stock")

@@ -1,5 +1,6 @@
 package com.acme.scm.service;
 
+import com.acme.commons.Result;
 import com.acme.scm.model.Vendor;
 import com.acme.scm.repository.VendorRepository;
 import com.acme.logging.InternalLogger;
@@ -28,9 +29,10 @@ public class VendorService {
         return vendorRepository.findAll();
     }
 
-    public Vendor getVendorByCode(String vendorCode) {
+    public Result<Vendor> getVendorByCode(String vendorCode) {
         return vendorRepository.findByVendorCode(vendorCode)
-                .orElseThrow(() -> new RuntimeException("Vendor not found: " + vendorCode)); // TECH DEBT: Exception flow
+                .map(Result::success)
+                .orElse(Result.failure("Vendor not found: " + vendorCode));
     }
 
     public boolean isVendorActive(Long vendorId) {

@@ -1,19 +1,16 @@
 package com.acme.scm.controller;
 
+import com.acme.commons.Result;
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.service.PurchaseOrderService;
 import com.acme.logging.InternalLogger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * TECH DEBT:
- * - Uses @ControllerAdvice for exception handling (should use Result<T> pattern)
- * - Uses SLF4J instead of InternalLogger
- */
 @RestController
 @RequestMapping("/api/orders")
 public class PurchaseOrderController {
@@ -32,7 +29,13 @@ public class PurchaseOrderController {
     @GetMapping("/{orderNumber}")
     public ResponseEntity<PurchaseOrder> getOrderByNumber(@PathVariable String orderNumber) {
         logger.info("GET /api/orders/{} - Fetching order", orderNumber);
-        return ResponseEntity.ok(orderService.getOrderByNumber(orderNumber));
+        Result<PurchaseOrder> result = orderService.getOrderByNumber(orderNumber);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        } else {
+            logger.warn("Order not found: {}", orderNumber);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/pending")
@@ -44,8 +47,13 @@ public class PurchaseOrderController {
     @PostMapping
     public ResponseEntity<PurchaseOrder> createOrder(@RequestBody PurchaseOrder order) {
         logger.info("POST /api/orders - Creating new order: {}", order.getOrderNumber());
-        PurchaseOrder created = orderService.createOrder(order);
-        return ResponseEntity.ok(created);
+        Result<PurchaseOrder> result = orderService.createOrder(order);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        } else {
+            logger.warn("Failed to create order: {}", result.getError());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PutMapping("/{orderNumber}/approve")
@@ -53,7 +61,16 @@ public class PurchaseOrderController {
             @PathVariable String orderNumber,
             @RequestParam String approvedBy) {
         logger.info("PUT /api/orders/{}/approve - Approving order by {}", orderNumber, approvedBy);
-        PurchaseOrder approved = orderService.approveOrder(orderNumber, approvedBy);
-        return ResponseEntity.ok(approved);
+        Result<PurchaseOrder> result = orderService.approveOrder(orderNumber, approvedBy);
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result.getValue());
+        } else {
+            logger.warn("Failed to approve order {}: {}", orderNumber, result.getError());
+            // 404 if not found, 400 if wrong status
+            HttpStatus status = result.getError().startsWith("Order not found")
+                    ? HttpStatus.NOT_FOUND
+                    : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).build();
+        }
     }
 }

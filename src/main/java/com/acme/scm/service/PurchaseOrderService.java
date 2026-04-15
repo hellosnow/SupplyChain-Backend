@@ -1,5 +1,6 @@
 package com.acme.scm.service;
 
+import com.acme.commons.Result;
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.repository.PurchaseOrderRepository;
 import com.acme.logging.InternalLogger;
@@ -35,40 +36,38 @@ public class PurchaseOrderService {
     private String orderCreatedQueue;
 
     @Transactional
-    public PurchaseOrder createOrder(PurchaseOrder order) {
+    public Result<PurchaseOrder> createOrder(PurchaseOrder order) {
         logger.info("Creating purchase order: {}", order.getOrderNumber());
 
-        // TECH DEBT: Exception-based flow control (should use Result<T> pattern)
         if (order.getTotalAmount().doubleValue() <= 0) {
-            throw new IllegalArgumentException("Order amount must be greater than zero");
+            return Result.failure("Order amount must be greater than zero");
         }
 
-        // TECH DEBT: Exception-based validation (should use Result<T>)
         if (!vendorService.isVendorActive(order.getVendorId())) {
-            throw new IllegalStateException("Vendor is not active: " + order.getVendorId());
+            return Result.failure("Vendor is not active: " + order.getVendorId());
         }
 
         PurchaseOrder savedOrder = orderRepository.save(order);
 
-        // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
+        // Infrastructure-level exception handling (not business logic flow control)
         try {
             rabbitTemplate.convertAndSend(orderCreatedQueue, savedOrder);
             logger.info("Order created notification sent to queue: {}", orderCreatedQueue);
         } catch (Exception e) {
             logger.error("Failed to send order notification", e);
-            // TECH DEBT: Swallowing exception
         }
 
-        return savedOrder;
+        return Result.success(savedOrder);
     }
 
     public List<PurchaseOrder> getAllOrders() {
         return orderRepository.findAll();
     }
 
-    public PurchaseOrder getOrderByNumber(String orderNumber) {
+    public Result<PurchaseOrder> getOrderByNumber(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new RuntimeException("Order not found: " + orderNumber)); // TECH DEBT: Exception flow
+                .map(Result::success)
+                .orElse(Result.failure("Order not found: " + orderNumber));
     }
 
     public List<PurchaseOrder> getPendingOrders() {
@@ -76,18 +75,21 @@ public class PurchaseOrderService {
     }
 
     @Transactional
-    public PurchaseOrder approveOrder(String orderNumber, String approvedBy) {
-        PurchaseOrder order = getOrderByNumber(orderNumber);
+    public Result<PurchaseOrder> approveOrder(String orderNumber, String approvedBy) {
+        Result<PurchaseOrder> orderResult = getOrderByNumber(orderNumber);
+        if (orderResult.isFailure()) {
+            return orderResult;
+        }
+        PurchaseOrder order = orderResult.getValue();
 
-        // TECH DEBT: Exception-based flow control
         if (order.getStatus() != PurchaseOrder.OrderStatus.PENDING) {
-            throw new IllegalStateException("Order is not in pending status");
+            return Result.failure("Order is not in pending status");
         }
 
         order.setStatus(PurchaseOrder.OrderStatus.APPROVED);
         order.setApprovedBy(approvedBy);
         order.setApprovedDate(java.time.LocalDateTime.now());
 
-        return orderRepository.save(order);
+        return Result.success(orderRepository.save(order));
     }
 }
