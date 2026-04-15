@@ -5,12 +5,18 @@ spring:
   application:
     name: supplychain-backend
 
-  # TECH DEBT: Hardcoded credentials (violates guardrails)
-  # Should be migrated to Azure Key Vault
+  cloud:
+    azure:
+      keyvault:
+        secret:
+          property-sources:
+            - name: supplychain-keyvault
+              endpoint: ${AZURE_KEYVAULT_ENDPOINT}
+
   datasource:
     url: jdbc:mysql://mysql:3306/supplychain?useSSL=false&serverTimezone=UTC
-    username: root
-    password: root
+    username: ${mysql-username}
+    password: ${mysql-password}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -21,15 +27,12 @@ spring:
       hibernate:
         format_sql: true
 
-  # TECH DEBT: RabbitMQ hardcoded credentials
-  # Should be migrated to Azure Service Bus with custom messaging API
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: guest
-    password: guest
+    username: ${rabbitmq-username}
+    password: ${rabbitmq-password}
 
-# Application configuration
 app:
   messaging:
     queue:
