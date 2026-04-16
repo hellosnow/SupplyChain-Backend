@@ -1,6 +1,6 @@
-# Modernization Plan: Java Upgrade
+# Modernization Plan: SupplyChain Backend Java 25 Upgrade
 
-**Project**: supplychain-backend
+**Project**: SupplyChain Backend
 
 ---
 
@@ -9,7 +9,7 @@
 - **Language**: Java 8
 - **Framework**: Spring Boot 2.7.18
 - **Build Tool**: Maven
-- **Database**: MySQL
+- **Database**: MySQL 8.0
 - **Key Dependencies**: Spring Data JPA, Spring AMQP
   (RabbitMQ), Lombok, Spring Validation
 
@@ -17,41 +17,31 @@
 
 ## Overview
 
-This migration upgrades the SupplyChain Backend application
-from Java 8 and Spring Boot 2.7.18 to Java 21 and
-Spring Boot 3.x. The application currently runs on an
-outdated Java runtime and framework version that are
-approaching end of support. The upgrade will:
-
-- Modernize the runtime to Java 21 for improved
-  performance, security, and long-term support
-- Upgrade Spring Boot from 2.x to 3.x for access to
-  the latest framework features and security patches
-- Migrate from javax.* to jakarta.* namespace as
-  required by Spring Boot 3.x and Jakarta EE
-
-The migration follows a single-phase upgrade approach
-addressing the runtime, framework, and namespace changes
-together.
+> This migration upgrades the SupplyChain Backend
+> application from Java 8 and Spring Boot 2.7.18 to
+> Java 25 and Spring Boot 4.0+. The application
+> currently runs on legacy Java 8 with Spring Boot 2.x,
+> both of which are end-of-life per organizational
+> policy. The upgraded architecture will:
+>
+> - Run on Java 25 (latest LTS) as required by
+>   organizational targets
+> - Use Spring Boot 4.0+ with the corresponding
+>   Spring Framework upgrade
+> - Complete the javax.* to jakarta.* namespace
+>   migration required by the framework upgrade
+> - Update the Dockerfile to use organizationally
+>   approved Java 25 base images
+>
+> The max supported upgrade path configuration
+> (Java 21 / Spring Boot 3.x) is intentionally
+> overridden per user directive to align with
+> the organizational playbook targets.
 
 ---
 
 ## Migration Impact Summary
 
-| Application         | Original          | Target            | Comments            |
-|---------------------|-------------------|-------------------|---------------------|
-| supplychain-backend | Java 8            | Java 21           | JDK upgrade         |
-| supplychain-backend | Spring Boot 2.7.18| Spring Boot 3.x   | Framework upgrade   |
-| supplychain-backend | javax.* namespace | jakarta.*         | Namespace migration |
-
----
-
-## Tasks
-
-### Task 1: Upgrade Spring Boot to 3.x with Java 21
-
-Upgrade the application from Spring Boot 2.7.18 to
-Spring Boot 3.x with Java 21. This includes migrating
-from javax.* to jakarta.* namespace and upgrading
-Spring Framework from 5.x to 6.x. Update Dockerfile
-base images to use Java 21.
+| Application | Original | Target | Comments |
+|---|---|---|---|
+| supplychain-backend | Java 8, Spring Boot 2.7.18 | Java 25, Spring Boot 4.0+ | Full upgrade |
