@@ -17,34 +17,15 @@ import org.springframework.stereotype.Component;
 public class LoggingFilter implements Filter {
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-        log.info("LoggingFilter initialized");
-    }
-
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+    public void doFilter(ServletRequest request,
+                         ServletResponse response,
+                         FilterChain chain)
             throws IOException, ServletException {
 
-        if (isHttpServletRequest(request)) {
-            log.info("LoggingFilter: HTTP request detected");
-        } else {
-            log.info("LoggingFilter: NOT an HTTP request");
-        }
+        ClassLoaderInspector.inspect();
+
+        log.info("LoggingFilter: request received: " + ((HttpServletRequest) request).getRequestURI());
 
         chain.doFilter(request, response);
-    }
-
-    @Override
-    public void destroy() {
-        log.info("LoggingFilter destroyed");
-    }
-
-    private static boolean isHttpServletRequest(Object obj) {
-        try {
-            Class<?> clazz = Class.forName("javax.servlet.http.HttpServletRequest");
-            return clazz.isInstance(obj);
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 }
