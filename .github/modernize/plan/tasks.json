@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generated alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-spring-boot-3",
+      "description": "Upgrade the application from Spring Boot 2.7.18 to Spring Boot 3.x with Java 21",
+      "reason": "The application uses Java 8 and Spring Boot 2.7.18 which are approaching end of support. Upgrading to Spring Boot 3.x with Java 21 ensures long-term support, improved performance, and access to latest security patches.",
+      "requirements": "Upgrade Spring Boot from 2.7.18 to the latest 3.x release. Upgrade Java from 8 to 21. Migrate all javax.* imports to jakarta.* namespace. Upgrade Spring Framework from 5.x to 6.x. Ensure all existing functionality continues to work after the upgrade. Update Dockerfile base images to use Java 21.",
+      "environmentConfiguration": null,
+      "skills": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    }
+  ],
+  "metadata": {
+    "planName": "plan",
+    "projectName": "supplychain-backend",
+    "language": "java",
+    "createdAt": "2026-04-16T03:15:59.875Z",
+    "version": "1.0"
+  }
+}
