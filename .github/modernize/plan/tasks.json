@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-java-springboot",
+      "description": "Upgrade the application from Java 8 and Spring Boot 2.7.18 to Java 25 and Spring Boot 4.0+",
+      "reason": "Java 8 and Spring Boot 2.x are prohibited for internal use per corporate policy (targets.md, policies.md). The organization mandates Java 25 and Spring Boot 4.0+ as the minimum compliant baseline for all supply chain services.",
+      "requirements": "Upgrade the project to Java 25 and Spring Boot 4.0+. This includes: updating the Java source/target compiler version to 25, upgrading the Spring Boot parent POM version to 4.0+, migrating all javax.* imports to jakarta.* equivalents, addressing any Spring Boot 4.x breaking changes in configuration and API usage, and ensuring the project compiles and all tests pass after the upgrade. The target build base image is mcr.microsoft.com/openjdk/jdk:25-ubuntu and runtime image is mcr.microsoft.com/openjdk/jdk:25-distroless.",
+      "environmentConfiguration": null,
+      "skills": [
+        {
+          "name": "create-java-upgrade-plan",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    }
+  ],
+  "metadata": {
+    "planName": "plan",
+    "projectName": "supplychain-backend",
+    "language": "java",
+    "createdAt": "2026-04-16T05:50:23.274Z",
+    "version": "1.0"
+  }
+}
