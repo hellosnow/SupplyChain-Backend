@@ -7,8 +7,8 @@ Legacy Supply Chain Management System - Backend REST API
 This is an intentionally **legacy application** designed to demonstrate modernization scenarios. It contains the following technical debt that violates enterprise guardrails:
 
 ### Prohibited Technologies
-- ❌ **Java 8** (EOL) → Should upgrade to **Java 17 LTS**
-- ❌ **Spring Boot 2.7.18** → Should upgrade to **Spring Boot 3.x**
+- ✅ **Java 8** (EOL) upgraded to **Java 25**
+- ✅ **Spring Boot 2.7.18** upgraded to **Spring Boot 4.0+**
 - ❌ **RestTemplate** (bypasses mesh) → Should use **ServiceMesh SDK** (`com.acme.mesh.ServiceMesh`)
 - ❌ **SLF4J logging** (no trace context) → Should use **InternalLogger** (`com.acme.logging.InternalLogger`)
 - ❌ **RabbitMQ 3.6 client** → Should migrate to **Azure Service Bus** with custom messaging API
@@ -18,7 +18,7 @@ This is an intentionally **legacy application** designed to demonstrate moderniz
 - ❌ **Hardcoded credentials** in `application.yml` → Should use **Azure Key Vault**
 
 ### Missing Requirements
-- ❌ Wrong container base image (`openjdk:8-jre-alpine`) → Should use `mcr.microsoft.com/openjdk/jdk:17-distroless`
+- ✅ Container base image updated to `mcr.microsoft.com/openjdk/jdk:25-ubuntu` (build) and `mcr.microsoft.com/openjdk/jdk:25-distroless` (runtime)
 
 ---
 
@@ -50,7 +50,7 @@ This is an intentionally **legacy application** designed to demonstrate moderniz
 
 ### Prerequisites
 - Docker & Docker Compose
-- Or: Java 8, Maven, MySQL, RabbitMQ
+- Or: Java 25, Maven, MySQL, RabbitMQ
 
 ### Run with Docker Compose
 
@@ -231,8 +231,8 @@ curl http://localhost:8080/api/inventory/low-stock
 
 ## 📦 Dependencies
 
-- Spring Boot 2.7.18 (❌ should be 3.x)
-- Java 8 (❌ should be Java 17)
+- Spring Boot 4.0.0
+- Java 25
 - MySQL 8.0.33
 - RabbitMQ 3.6.6 (❌ old version)
 - Hibernate 4.x (via Spring Boot)
@@ -242,8 +242,8 @@ curl http://localhost:8080/api/inventory/low-stock
 ## 🎯 Modernization Roadmap
 
 1. **Framework Upgrade** (Act 2)
-   - Java 8 → Java 17
-   - Spring Boot 2.7 → Spring Boot 3.2
+   - Java 8 → Java 25 ✅
+   - Spring Boot 2.7 → Spring Boot 4.0 ✅
 
 2. **Replace Prohibited Libraries** (Act 3)
    - RestTemplate → ServiceMesh SDK
