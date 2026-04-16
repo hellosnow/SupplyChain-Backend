@@ -7,8 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * Supply Chain Management System - Backend API
  *
  * TECH DEBT SUMMARY:
- * - Java 8 (should be Java 17 LTS per guardrails)
- * - Spring Boot 2.7.18 (should be Spring Boot 3.x)
+ * - Java/Spring baseline upgraded to Java 25 and Spring Boot 4.0+
  * - RestTemplate usage (should use ServiceMesh SDK)
  * - SLF4J logging (should use InternalLogger)
  * - Hardcoded credentials (should use Azure Key Vault)
