@@ -1,0 +1,22 @@
+{
+  "repositories": [
+    {
+      "path": "../SupplyChain-Backend",
+      "name": "SupplyChain Backend",
+      "language": "java",
+      "description": "Legacy backend API for supply chain management - needs modernization to Azure"
+    },
+    {
+      "path": "../SupplyChain-Frontend",
+      "name": "SupplyChain Frontend",
+      "language": "java",
+      "description": "Legacy JSP frontend - needs modernization to Azure"
+    },
+    {
+      "path": "../SupplyChain-Worker",
+      "name": "SupplyChain Worker",
+      "language": "java",
+      "description": "Background worker with RabbitMQ - needs migration to Azure Service Bus"
+    }
+  ]
+}

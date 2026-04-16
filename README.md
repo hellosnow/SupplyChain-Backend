@@ -52,38 +52,30 @@ This is an intentionally **legacy application** designed to demonstrate moderniz
 - Docker & Docker Compose
 - Or: Java 8, Maven, MySQL, RabbitMQ
 
-### Run with Docker Compose
-
-```bash
-# Start all dependencies (MySQL + RabbitMQ + Backend)
-cd ../SupplyChain-Demo-Orchestration
-docker-compose up --build
-
-# Or run backend standalone (requires MySQL + RabbitMQ running)
-docker build -t supplychain-backend .
-docker run -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/supplychain \
-  -e SPRING_RABBITMQ_HOST=rabbitmq \
-  supplychain-backend
-```
-
 ### Run Locally (Development)
 
 ```bash
+# Create docker network
+docker network create supplyChain-backend-net
+
 # Start MySQL
 docker run -d --name mysql \
+  --network supplyChain-backend-net \
   -e MYSQL_ROOT_PASSWORD=root \
   -e MYSQL_DATABASE=supplychain \
   -p 3306:3306 mysql:5.7
 
 # Start RabbitMQ
 docker run -d --name rabbitmq \
+  --network supplyChain-backend-net \
   -p 5672:5672 -p 15672:15672 \
   rabbitmq:3.6-management
 
 # Build and run
-mvn clean package
-java -jar target/supplychain-backend-1.0.0-LEGACY.jar
+docker build -t supplychain-backend .
+docker run -p 8080:8080 \
+  --network supplyChain-backend-net \
+  supplychain-backend
 ```
 
 ---
