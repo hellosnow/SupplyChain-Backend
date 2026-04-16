@@ -20,7 +20,13 @@
         "generateNewUnitTests": "false",
         "passUnitTests": "true"
       },
-      "status": "completed"
+      "status": "success",
+      "taskSummary": "Upgraded project from Java 8/Spring Boot 2.7.18 to Java 25/Spring Boot 4.0.0, migrated javax.persistence imports to jakarta.persistence, updated MySQL driver/dialect, refreshed Docker base images, and verified build/tests.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "true",
+        "passUnitTests": "true"
+      }
     }
   ],
   "metadata": {
