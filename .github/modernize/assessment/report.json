@@ -899,7 +899,7 @@
     },
     "hardcoded-urls-00001": {
       "id": "hardcoded-urls-00001",
-      "description": "This patterns verifies in source code and configuration files the presence of hardcoded URLs using the HTTP protocol (HTTP/HTTPS). This URL would need to be replaced by the new resource's URL during the Cloud migration, if any change occured.",
+      "description": "This patterns verifies in source code and configuration files the presence of hardcoded URLs using the HTTP protocol (HTTP/HTTPS). This URL would need to be replaced by the new resource's URL during the Cloud migration, if any change occurred.",
       "title": "Avoid using hardcoded URLs (HTTP protocol) in source code",
       "severity": "optional",
       "effort": 3,
@@ -1000,7 +1000,7 @@
     },
     "unsecure-network-protocol-00000": {
       "id": "unsecure-network-protocol-00000",
-      "description": "Using secured protocols such as HTTPS and SFTP (over HTTP and FTP) should now be the norm as applications are more and more exposed and interconnected. \nThis CloudReady patterns looks for unescured URI in the source code or deprecated URI libraries. \nIdeally, URLs should be replaced in your source code by secured protocols HTTPS and SFTP (and ensure the infrastructure implements these protocols for the resources your application calls, uses or references).",
+      "description": "Using secured protocols such as HTTPS and SFTP (over HTTP and FTP) should now be the norm as applications are more and more exposed and interconnected. \nThis CloudReady patterns looks for unsecured URI in the source code or deprecated URI libraries. \nIdeally, URLs should be replaced in your source code by secured protocols HTTPS and SFTP (and ensure the infrastructure implements these protocols for the resources your application calls, uses or references).",
       "title": "Use of unsecured network protocols or URI libraries",
       "severity": "mandatory",
       "effort": 3,
