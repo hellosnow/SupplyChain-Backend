@@ -1,9 +1,9 @@
 package com.acme.scm.service;
 
+import com.acme.logging.InternalLogger;
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.repository.PurchaseOrderRepository;
 import com.azure.spring.messaging.servicebus.core.ServiceBusTemplate;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.support.MessageBuilder;
@@ -14,12 +14,12 @@ import java.util.List;
 
 /**
  * TECH DEBT:
- * - Uses SLF4J instead of InternalLogger (violates guardrails)
  * - Uses exception-based flow control (violates guardrails)
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
 @Service
 public class PurchaseOrderService {
+
+    private static final InternalLogger logger = InternalLogger.getLogger(PurchaseOrderService.class);
 
     @Autowired
     private PurchaseOrderRepository orderRepository;
@@ -35,7 +35,7 @@ public class PurchaseOrderService {
 
     @Transactional
     public PurchaseOrder createOrder(PurchaseOrder order) {
-        log.info("Creating purchase order: {}", order.getOrderNumber());
+        logger.info("Creating purchase order: {}", order.getOrderNumber());
 
         // TECH DEBT: Exception-based flow control (should use Result<T> pattern)
         if (order.getTotalAmount().doubleValue() <= 0) {
@@ -51,9 +51,9 @@ public class PurchaseOrderService {
 
         try {
             serviceBusTemplate.send(orderCreatedQueue, MessageBuilder.withPayload(savedOrder).build());
-            log.info("Order created notification sent to queue: {}", orderCreatedQueue);
+            logger.info("Order created notification sent to queue: {}", orderCreatedQueue);
         } catch (Exception e) {
-            log.error("Failed to send order notification", e);
+            logger.error("Failed to send order notification", e);
             // TECH DEBT: Swallowing exception
         }
 

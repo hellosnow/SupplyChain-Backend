@@ -95,6 +95,14 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- InternalLogger SDK - approved logging framework (provides trace ID injection, structured JSON) -->
+        <dependency>
+            <groupId>com.acme.logging</groupId>
+            <artifactId>internal-logger</artifactId>
+            <version>1.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

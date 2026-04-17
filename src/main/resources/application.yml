@@ -38,8 +38,3 @@ app:
       order-created: order.created
       inventory-alert: inventory.alert
       approval-pending: approval.pending
-
-logging:
-  level:
-    com.acme.scm: DEBUG
-    org.hibernate.SQL: DEBUG
