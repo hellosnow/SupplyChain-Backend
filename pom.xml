@@ -24,6 +24,23 @@
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-cloud-azure.version>5.22.0</spring-cloud-azure.version>
+
+        <!-- CVE Fixes: Override Spring Boot BOM-managed versions -->
+        <!-- GHSA-2m67-wjpj-xhg9, GHSA-6v53-7c9g-w56r, GHSA-72hv-8253-57qq:
+             jackson-core 3.x — no BOM artifact available; individual jars overridden in dependencyManagement -->
+        <!-- GHSA-24j9-x2wg-9qv6 GHSA-8mc5-53m5-3qj2 GHSA-95jq-rwvf-vjx4 GHSA-9m3c-qcxr-9x87
+             GHSA-mgp5-rv84-w37q GHSA-rv64-5gf8-9qq8 GHSA-x4m4-345f-5h5g: Tomcat -->
+        <tomcat.version>11.0.21</tomcat.version>
+        <!-- GHSA-qqpg-mvqg-649v: logback -->
+        <logback.version>1.5.25</logback.version>
+        <!-- GHSA-4773-3jfm-qmx3 GHSA-6hcq-hmm3-jj3c: spring-webmvc -->
+        <spring-framework.version>7.0.6</spring-framework.version>
+        <!-- GHSA-72hv-8253-57qq: jackson-core 2.x (used by azure-core) -->
+        <jackson-2-bom.version>2.21.1</jackson-2-bom.version>
+        <!-- GHSA-pwqr-wmgm-9rr8: netty-codec-http -->
+        <netty.version>4.2.10.Final</netty.version>
+        <!-- GHSA-rqfh-9r24-8c9r: assertj-core XXE (test scope) -->
+        <assertj.version>3.27.7</assertj.version>
     </properties>
 
     <dependencyManagement>
@@ -34,6 +51,34 @@
                 <version>${spring-cloud-azure.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- CVE Fix: GHSA-2m67-wjpj-xhg9, GHSA-6v53-7c9g-w56r, GHSA-72hv-8253-57qq
+                 jackson-core 3.x constraint bypass vulnerabilities — fixed in 3.1.1
+                 (No Jackson 3.x BOM available; override individual artifacts) -->
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>3.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>3.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>3.1.1</version>
+            </dependency>
+
+            <!-- CVE Fix: GHSA-xwmg-2g98-w7v9
+                 nimbus-jose-jwt DoS via deeply nested JSON — fixed in 10.0.2
+                 (No property override available; pin via dependencyManagement) -->
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>10.0.2</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
