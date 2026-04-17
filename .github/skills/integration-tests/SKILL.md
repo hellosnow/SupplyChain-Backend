@@ -10,7 +10,7 @@ description: Run multi-layer integration tests for modernized Java applications.
 ## User Input
 - **layer** (Optional): Which layer to test (1, 2, 3, or 4). Default: 1
 - **azure-config** (Optional, Layer 3 only): Azure environment configuration
-- **modernization-work-folder** (Optional): Directory path for generating plan and summary files. Default: `.github/integration-tests`
+- **modernization-work-folder** (Optional): Directory path for generating plan and summary files. Default: `.github`
 - **test-root** (Optional): The root directory for integration tests. Default: current working directory. All application modules found in the directory are included in integration tests.
 
 ## Available references
@@ -34,7 +34,7 @@ description: Run multi-layer integration tests for modernized Java applications.
 ## Workflow
 
 1. Analyze the project to identify modules that need to be tested and any existing integration tests. If git history is available, analyze past commits to understand which components were modified during modernization and prioritize testing those areas.
-2. Create an integration test plan file at `{modernization-work-folder}/integration-test-plan.md` that outlines:
+2. Create an integration test plan file at `{modernization-work-folder}/integration-tests/integration-test-plan.md` that outlines:
   - Testing strategy and approach for the detected app modules
   - Testing strategy and approach for each layer
   - Identified components requiring integration testing
@@ -48,7 +48,7 @@ description: Run multi-layer integration tests for modernized Java applications.
   - Fix test code if the failure is due to unrealistic test scenarios, incorrect test setup.
   - Execute tests again after fixes
 6. **Only proceed when all tests run and pass**, or exit after 20 attempts
-7. Create an integration test summary file at `{modernization-work-folder}/integration-test-summary.md` that documents:
+7. Create an integration test summary file at `{modernization-work-folder}/integration-tests/integration-test-summary.md` that documents:
   - All integration tests added (with file paths and descriptions)
   - Test coverage improvements achieved
   - Final test execution results
@@ -298,7 +298,7 @@ exit $TEST_EXIT
 
 ## Completion Criteria
 
-1. **Integration Test Plan**: Create and output a plan file at `{modernization-work-folder}/integration-test-plan.md` that includes:
+1. **Integration Test Plan**: Create and output a plan file at `{modernization-work-folder}/integration-tests/integration-test-plan.md` that includes:
    - Analysis of existing test coverage gaps
    - Identified components requiring integration testing
    - Testing strategy and approach for each component
@@ -314,7 +314,7 @@ exit $TEST_EXIT
     - **Layer 2**: Multi-commit sequence as defined in [layer2-smoke-tests.md](./references/layer2-smoke-tests.md) (minimum 3 commits: artifacts → auth → restore). Runner scripts are part of the artifacts commit.
     - **Git ignore respect**: Use standard `git add` commands. Do not force-add files. If files in `{modernization-work-folder}` are ignored by the project's `.gitignore`, respect that.
 
-7. **Integration Test Summary**: Create and output a summary file at `{modernization-work-folder}/integration-test-summary.md` that documents:
+7. **Integration Test Summary**: Create and output a summary file at `{modernization-work-folder}/integration-tests/integration-test-summary.md` that documents:
    - All integration tests added (with file paths and descriptions)
    - Test coverage improvements achieved
    - Issues identified and resolved (both in source code and test code)
