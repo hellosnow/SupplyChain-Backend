@@ -44,6 +44,13 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
+        <!-- Azure Identity Extensions for Managed Identity (Azure Database for MySQL) -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-identity-extensions</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+
         <!-- RabbitMQ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

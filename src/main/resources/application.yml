@@ -5,13 +5,12 @@ spring:
   application:
     name: supplychain-backend
 
-  # TECH DEBT: Hardcoded credentials (violates guardrails)
-  # Should be migrated to Azure Key Vault
   datasource:
-    url: jdbc:mysql://mysql:3306/supplychain?useSSL=false&serverTimezone=UTC
-    username: root
-    password: root
+    url: jdbc:mysql://mysql:3306/supplychain?useSSL=false&serverTimezone=UTC&authenticationPlugins=com.azure.identity.extensions.jdbc.mysql.AzureMysqlAuthenticationPlugin
+    username: ${AZURE_MANAGED_IDENTITY_NAME}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    azure:
+      managed-identity-enabled: true
 
   jpa:
     hibernate:
