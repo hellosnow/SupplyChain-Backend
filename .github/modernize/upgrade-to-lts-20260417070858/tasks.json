@@ -1,0 +1,33 @@
+{
+  "$schema": "tasks-schema.json",
+  "description": "Upgrade plan to migrate project to JDK 25",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-java-version",
+      "description": "Upgrade to JDK 25",
+      "reason": "Upgrade to the latest Java LTS version (JDK 25) for improved performance, security patches, and long-term support.",
+      "requirements": "Upgrade JDK to version 25. Update compiler source and target levels to 25. Update build tool configuration (Maven/Gradle) to target JDK 25. Resolve any compilation issues arising from deprecated or removed APIs in newer Java versions.",
+      "environmentConfiguration": null,
+      "skills": [
+        {
+          "name": "java-version-upgrade",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      },
+      "status": "pending"
+    }
+  ],
+  "metadata": {
+    "planName": "upgrade-to-lts",
+    "projectName": "application",
+    "language": "java",
+    "createdAt": "2026-04-17T07:09:02.000Z",
+    "version": "1.0"
+  }
+}
