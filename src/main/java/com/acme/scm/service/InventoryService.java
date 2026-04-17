@@ -2,10 +2,11 @@ package com.acme.scm.service;
 
 import com.acme.scm.model.Inventory;
 import com.acme.scm.repository.InventoryRepository;
+import com.azure.spring.messaging.servicebus.core.ServiceBusTemplate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,7 +15,6 @@ import java.util.stream.Collectors;
 /**
  * TECH DEBT:
  * - Uses SLF4J instead of InternalLogger
- * - Uses RabbitMQ directly instead of custom messaging API
  */
 @Slf4j // TECH DEBT: Should use InternalLogger
 @Service
@@ -24,7 +24,7 @@ public class InventoryService {
     private InventoryRepository inventoryRepository;
 
     @Autowired
-    private RabbitTemplate rabbitTemplate; // TECH DEBT: Should use custom messaging API
+    private ServiceBusTemplate serviceBusTemplate;
 
     @Value("${app.messaging.queue.inventory-alert}")
     private String inventoryAlertQueue;
@@ -50,10 +50,9 @@ public class InventoryService {
         if (!lowStockItems.isEmpty()) {
             log.warn("Found {} low stock items", lowStockItems.size());
 
-            // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
             for (Inventory item : lowStockItems) {
                 try {
-                    rabbitTemplate.convertAndSend(inventoryAlertQueue, item);
+                    serviceBusTemplate.send(inventoryAlertQueue, MessageBuilder.withPayload(item).build());
                     log.info("Low stock alert sent for SKU: {}", item.getSku());
                 } catch (Exception e) {
                     log.error("Failed to send inventory alert for SKU: {}", item.getSku(), e);

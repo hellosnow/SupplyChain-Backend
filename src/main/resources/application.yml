@@ -21,13 +21,15 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
-  # TECH DEBT: RabbitMQ hardcoded credentials
-  # Should be migrated to Azure Service Bus with custom messaging API
-  rabbitmq:
-    host: rabbitmq
-    port: 5672
-    username: guest
-    password: guest
+  # Azure Service Bus with Managed Identity
+  cloud:
+    azure:
+      credential:
+        managed-identity-enabled: true
+        client-id: ${AZURE_CLIENT_ID}
+      servicebus:
+        entity-type: queue
+        namespace: ${SERVICE_BUS_NAMESPACE}
 
 # Application configuration
 app:
