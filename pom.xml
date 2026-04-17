@@ -87,6 +87,14 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- ServiceMesh SDK - replaces RestTemplate for inter-service calls -->
+        <dependency>
+            <groupId>com.acme.mesh</groupId>
+            <artifactId>service-mesh</artifactId>
+            <version>1.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
