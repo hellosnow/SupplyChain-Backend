@@ -8,4 +8,4 @@ See tasks.json for detailed task breakdown.
 
 | Task ID | Description | Status |
 |---------|-------------|--------|
-| 001-upgrade-java-version | Upgrade to JDK 25 | pending |
+| 001-upgrade-java-version | Upgrade to JDK 25 | success |
