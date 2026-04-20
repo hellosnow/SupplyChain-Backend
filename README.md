@@ -9,7 +9,7 @@ Legacy Supply Chain Management System - Backend REST API
                                     | Web Browser
                                     v
                     +-------------------------------+
-                    |        FRONTEND               |
+                    |      **FRONTEND**             |
                     |     Web Dashboard             |
                     |                               |
                     |  • View purchase orders       |
@@ -20,7 +20,7 @@ Legacy Supply Chain Management System - Backend REST API
                                     | REST API
                                     v
                     +-------------------------------+
-                    |       BACKEND API             |
+                    |       **BACKEND**             |
                     |     Business Logic            |
                     |                               |
                     |  • Order management           |
@@ -40,7 +40,7 @@ Legacy Supply Chain Management System - Backend REST API
                                             | events
                                             v
                     +-------------------------------+
-                    |         WORKER                |
+                    |       **WORKER**              |
                     |    Background Service         |
                     |                               |
                     |  • Email notifications        |
