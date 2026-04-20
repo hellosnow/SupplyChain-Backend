@@ -2,24 +2,6 @@
 
 Legacy Supply Chain Management System - Backend REST API
 
-## 🚨 Technical Debt Summary
-
-This is an intentionally **legacy application** designed to demonstrate modernization scenarios. It contains the following technical debt that violates enterprise guardrails:
-
-### Prohibited Technologies
-- ❌ **Java 8** (EOL) → Should upgrade to **Java 17 LTS**
-- ❌ **Spring Boot 2.7.18** → Should upgrade to **Spring Boot 3.x**
-- ❌ **RestTemplate** (bypasses mesh) → Should use **ServiceMesh SDK** (`com.acme.mesh.ServiceMesh`)
-- ❌ **SLF4J logging** (no trace context) → Should use **InternalLogger** (`com.acme.logging.InternalLogger`)
-- ❌ **RabbitMQ 3.6 client** → Should migrate to **Azure Service Bus** with custom messaging API
-
-### Prohibited Patterns
-- ❌ **Exception-based flow control** → Should use **Result<T> pattern** (`com.acme.commons.Result`)
-- ❌ **Hardcoded credentials** in `application.yml` → Should use **Azure Key Vault**
-
-### Missing Requirements
-- ❌ Wrong container base image (`openjdk:8-jre-alpine`) → Should use `mcr.microsoft.com/openjdk/jdk:17-distroless`
-
 ---
 
 ## 🏗️ Architecture
@@ -104,6 +86,26 @@ GET    /api/vendors            # List all vendors
 GET    /api/vendors/{vendorCode}  # Get vendor by code
 GET    /api/vendors/{vendorCode}/rating  # Get vendor rating (uses RestTemplate)
 ```
+
+---
+
+## 🚨 Technical Debt Summary
+
+This is an intentionally **legacy application** designed to demonstrate modernization scenarios. It contains the following technical debt that violates enterprise guardrails:
+
+### Prohibited Technologies
+- ❌ **Java 8** (EOL) → Should upgrade to **Java 17 LTS**
+- ❌ **Spring Boot 2.7.18** → Should upgrade to **Spring Boot 3.x**
+- ❌ **RestTemplate** (bypasses mesh) → Should use **ServiceMesh SDK** (`com.acme.mesh.ServiceMesh`)
+- ❌ **SLF4J logging** (no trace context) → Should use **InternalLogger** (`com.acme.logging.InternalLogger`)
+- ❌ **RabbitMQ 3.6 client** → Should migrate to **Azure Service Bus** with custom messaging API
+
+### Prohibited Patterns
+- ❌ **Exception-based flow control** → Should use **Result<T> pattern** (`com.acme.commons.Result`)
+- ❌ **Hardcoded credentials** in `application.yml` → Should use **Azure Key Vault**
+
+### Missing Requirements
+- ❌ Wrong container base image (`openjdk:8-jre-alpine`) → Should use `mcr.microsoft.com/openjdk/jdk:17-distroless`
 
 ---
 
