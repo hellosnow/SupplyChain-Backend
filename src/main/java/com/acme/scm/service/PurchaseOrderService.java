@@ -3,10 +3,11 @@ package com.acme.scm.service;
 import com.acme.logging.InternalLogger;
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.repository.PurchaseOrderRepository;
-import com.azure.spring.messaging.servicebus.core.ServiceBusTemplate;
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +26,14 @@ public class PurchaseOrderService {
     private PurchaseOrderRepository orderRepository;
 
     @Autowired
-    private ServiceBusTemplate serviceBusTemplate;
+    @Qualifier("orderCreatedSender")
+    private ServiceBusSenderClient orderCreatedSender;
 
     @Autowired
     private VendorService vendorService;
 
-    @Value("${app.messaging.queue.order-created}")
-    private String orderCreatedQueue;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Transactional
     public PurchaseOrder createOrder(PurchaseOrder order) {
@@ -50,8 +52,9 @@ public class PurchaseOrderService {
         PurchaseOrder savedOrder = orderRepository.save(order);
 
         try {
-            serviceBusTemplate.send(orderCreatedQueue, MessageBuilder.withPayload(savedOrder).build());
-            logger.info("Order created notification sent to queue: {}", orderCreatedQueue);
+            String json = objectMapper.writeValueAsString(savedOrder);
+            orderCreatedSender.sendMessage(new ServiceBusMessage(json));
+            logger.info("Order created notification sent");
         } catch (Exception e) {
             logger.error("Failed to send order notification", e);
             // TECH DEBT: Swallowing exception

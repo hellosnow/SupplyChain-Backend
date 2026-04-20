@@ -1,6 +1,16 @@
 # SupplyChain Backend API
 
-Legacy Supply Chain Management System - Backend REST API
+**Legacy Supply Chain Management System - Backend REST API**
+
+> **Part of a 3-application supply chain portfolio demonstrating batch modernization scenarios.**  
+> This backend contains intentional technical debt (Java 8, Spring Boot 2.7, RabbitMQ, CVEs, hardcoded credentials) representing typical enterprise legacy applications requiring coordinated modernization to Azure managed services.
+
+**Portfolio Context:**
+- **SupplyChain-Backend** (this repo) - 🔴 Legacy - Java 8, RabbitMQ, security vulnerabilities
+- **SupplyChain-Frontend** - 🔴 Legacy - Java 8, JSP, outdated dependencies  
+- **SupplyChain-Worker** - 🟢 Modern - Java 21, Spring Boot 3.4, Azure Service Bus
+
+**Modernization Priority:** HIGH (security vulnerabilities, compliance violations, messaging migration needed)
 
 ---
 

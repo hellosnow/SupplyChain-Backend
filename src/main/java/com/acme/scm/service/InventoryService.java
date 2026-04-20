@@ -3,10 +3,11 @@ package com.acme.scm.service;
 import com.acme.logging.InternalLogger;
 import com.acme.scm.model.Inventory;
 import com.acme.scm.repository.InventoryRepository;
-import com.azure.spring.messaging.servicebus.core.ServiceBusTemplate;
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,10 +22,11 @@ public class InventoryService {
     private InventoryRepository inventoryRepository;
 
     @Autowired
-    private ServiceBusTemplate serviceBusTemplate;
+    @Qualifier("inventoryAlertSender")
+    private ServiceBusSenderClient inventoryAlertSender;
 
-    @Value("${app.messaging.queue.inventory-alert}")
-    private String inventoryAlertQueue;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public List<Inventory> getAllInventory() {
         return inventoryRepository.findAll();
@@ -49,7 +51,8 @@ public class InventoryService {
 
             for (Inventory item : lowStockItems) {
                 try {
-                    serviceBusTemplate.send(inventoryAlertQueue, MessageBuilder.withPayload(item).build());
+                    String json = objectMapper.writeValueAsString(item);
+                    inventoryAlertSender.sendMessage(new ServiceBusMessage(json));
                     logger.info("Low stock alert sent for SKU: {}", item.getSku());
                 } catch (Exception e) {
                     logger.error("Failed to send inventory alert for SKU: {}", item.getSku(), e);

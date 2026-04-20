@@ -21,18 +21,11 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
-  # Azure Service Bus with Managed Identity
-  cloud:
-    azure:
-      credential:
-        managed-identity-enabled: true
-        client-id: ${AZURE_CLIENT_ID}
-      servicebus:
-        entity-type: queue
-        namespace: ${SERVICE_BUS_NAMESPACE}
-
 # Application configuration
 app:
+  azure:
+    servicebus:
+      namespace: ${SERVICE_BUS_NAMESPACE}
   messaging:
     queue:
       order-created: order.created
