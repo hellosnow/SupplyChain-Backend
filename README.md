@@ -2,24 +2,6 @@
 
 Legacy Supply Chain Management System - Backend REST API
 
-## 🚨 Technical Debt Summary
-
-This is an intentionally **legacy application** designed to demonstrate modernization scenarios. It contains the following technical debt that violates enterprise guardrails:
-
-### Prohibited Technologies
-- ❌ **Java 8** (EOL) → Should upgrade to **Java 17 LTS**
-- ❌ **Spring Boot 2.7.18** → Should upgrade to **Spring Boot 3.x**
-- ❌ **RestTemplate** (bypasses mesh) → Should use **ServiceMesh SDK** (`com.acme.mesh.ServiceMesh`)
-- ❌ **SLF4J logging** (no trace context) → Should use **InternalLogger** (`com.acme.logging.InternalLogger`)
-- ❌ **RabbitMQ 3.6 client** → Should migrate to **Azure Service Bus** with custom messaging API
-
-### Prohibited Patterns
-- ❌ **Exception-based flow control** → Should use **Result<T> pattern** (`com.acme.commons.Result`)
-- ❌ **Hardcoded credentials** in `application.yml` → Should use **Azure Key Vault**
-
-### Missing Requirements
-- ❌ Wrong container base image (`openjdk:8-jre-alpine`) → Should use `mcr.microsoft.com/openjdk/jdk:17-distroless`
-
 ---
 
 ## 🏗️ Architecture
@@ -52,38 +34,30 @@ This is an intentionally **legacy application** designed to demonstrate moderniz
 - Docker & Docker Compose
 - Or: Java 8, Maven, MySQL, RabbitMQ
 
-### Run with Docker Compose
-
-```bash
-# Start all dependencies (MySQL + RabbitMQ + Backend)
-cd ../SupplyChain-Demo-Orchestration
-docker-compose up --build
-
-# Or run backend standalone (requires MySQL + RabbitMQ running)
-docker build -t supplychain-backend .
-docker run -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/supplychain \
-  -e SPRING_RABBITMQ_HOST=rabbitmq \
-  supplychain-backend
-```
-
 ### Run Locally (Development)
 
 ```bash
+# Create docker network
+docker network create supplyChain-backend-net
+
 # Start MySQL
 docker run -d --name mysql \
+  --network supplyChain-backend-net \
   -e MYSQL_ROOT_PASSWORD=root \
   -e MYSQL_DATABASE=supplychain \
   -p 3306:3306 mysql:5.7
 
 # Start RabbitMQ
 docker run -d --name rabbitmq \
+  --network supplyChain-backend-net \
   -p 5672:5672 -p 15672:15672 \
   rabbitmq:3.6-management
 
 # Build and run
-mvn clean package
-java -jar target/supplychain-backend-1.0.0-LEGACY.jar
+docker build -t supplychain-backend .
+docker run -p 8080:8080 \
+  --network supplyChain-backend-net \
+  supplychain-backend
 ```
 
 ---
@@ -112,6 +86,26 @@ GET    /api/vendors            # List all vendors
 GET    /api/vendors/{vendorCode}  # Get vendor by code
 GET    /api/vendors/{vendorCode}/rating  # Get vendor rating (uses RestTemplate)
 ```
+
+---
+
+## 🚨 Technical Debt Summary
+
+This is an intentionally **legacy application** designed to demonstrate modernization scenarios. It contains the following technical debt that violates enterprise guardrails:
+
+### Prohibited Technologies
+- ❌ **Java 8** (EOL) → Should upgrade to **Java 17 LTS**
+- ❌ **Spring Boot 2.7.18** → Should upgrade to **Spring Boot 3.x**
+- ❌ **RestTemplate** (bypasses mesh) → Should use **ServiceMesh SDK** (`com.acme.mesh.ServiceMesh`)
+- ❌ **SLF4J logging** (no trace context) → Should use **InternalLogger** (`com.acme.logging.InternalLogger`)
+- ❌ **RabbitMQ 3.6 client** → Should migrate to **Azure Service Bus** with custom messaging API
+
+### Prohibited Patterns
+- ❌ **Exception-based flow control** → Should use **Result<T> pattern** (`com.acme.commons.Result`)
+- ❌ **Hardcoded credentials** in `application.yml` → Should use **Azure Key Vault**
+
+### Missing Requirements
+- ❌ Wrong container base image (`openjdk:8-jre-alpine`) → Should use `mcr.microsoft.com/openjdk/jdk:17-distroless`
 
 ---
 
