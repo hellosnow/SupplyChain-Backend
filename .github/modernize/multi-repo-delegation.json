@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "createdAt": "2026-04-20T05:37:54.7239726Z",
+  "status": "in_progress",
+  "repos": [
+    {
+      "name": "SupplyChain-backend",
+      "url": "https://github.com/hellosnow/SupplyChain-backend.git",
+      "clonePath": "C:\\Users\\jessiehuang\\modernize\\repos\\SupplyChain-backend",
+      "statusFileDirectory": "C:\\Users\\jessiehuang\\modernize\\repos\\SupplyChain-backend\\.github\\modernize\\delegation",
+      "sessionId": "3db6fd1d-1ac8-4af0-82cf-522f190517fc",
+      "detectedLanguage": "Java",
+      "relativePath": ""
+    }
+  ]
+}
