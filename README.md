@@ -4,49 +4,38 @@ Legacy Supply Chain Management System - Backend REST API
 
 ---
 ## Overall Architecture
-                            [Procurement Users]
-                                    |
-                                    | Web Browser
-                                    v
-                    +-------------------------------+
-                    |      **FRONTEND**             |
-                    |     Web Dashboard             |
-                    |                               |
-                    |  • View purchase orders       |
-                    |  • Manage inventory           |
-                    |  • Track vendors              |
-                    +---------------+---------------+
-                                    |
-                                    | REST API
-                                    v
-                    +-------------------------------+
-                    |       **BACKEND**             |
-                    |     Business Logic            |
-                    |                               |
-                    |  • Order management           |
-                    |  • Inventory control          |
-                    |  • Vendor management          |
-                    +-------+---------------+-------+
-                            |               |
-                      Saves |               | Publishes
-                       data |               | events
-                            v               v
-                    +-----------+     +-----------+
-                    |  MySQL    |     | RabbitMQ  |
-                    | Database  |     | Messaging |
-                    +-----------+     +-----+-----+
-                                            |
-                                            | Consumes
-                                            | events
-                                            v
-                    +-------------------------------+
-                    |       **WORKER**              |
-                    |    Background Service         |
-                    |                               |
-                    |  • Email notifications        |
-                    |  • Order processing           |
-                    |  • Inventory alerts           |
-                    +-------------------------------+
+                  [Procurement Users]
+                          |
+                          | Web Browser
+                          v
+        +-------------------------------+          +-------------------------------+
+        |      **FRONTEND**             |          |       **BACKEND**             |
+        |     Web Dashboard             | REST API |     Business Logic            |
+        |                               +--------->+                               |
+        |  • View purchase orders       |          |  • Order management           |
+        |  • Manage inventory           |          |  • Inventory control          |
+        |  • Track vendors              |          |  • Vendor management          |
+        +-------------------------------+          +-------+---------------+-------+
+                                                           |               |
+                                                     Saves |               | Publishes
+                                                      data |               | events
+                                                           v               v
+                                                   +-----------+     +-----------+
+                                                   |  MySQL    |     | RabbitMQ  |
+                                                   | Database  |     | Messaging |
+                                                   +-----------+     +-----+-----+
+                                                                           |
+                                                                           | Consumes
+                                                                           | events
+                                                                           v
+                                                   +-------------------------------+
+                                                   |       **WORKER**              |
+                                                   |    Background Service         |
+                                                   |                               |
+                                                   |  • Email notifications        |
+                                                   |  • Order processing           |
+                                                   |  • Inventory alerts           |
+                                                   +-------------------------------+
 
 
 APPLICATIONS SUMMARY:
