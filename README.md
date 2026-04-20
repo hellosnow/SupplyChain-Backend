@@ -3,6 +3,61 @@
 Legacy Supply Chain Management System - Backend REST API
 
 ---
+## Overall Architecture
+                            [Procurement Users]
+                                    |
+                                    | Web Browser
+                                    v
+                    +-------------------------------+
+                    |        FRONTEND               |
+                    |     Web Dashboard             |
+                    |                               |
+                    |  • View purchase orders       |
+                    |  • Manage inventory           |
+                    |  • Track vendors              |
+                    +---------------+---------------+
+                                    |
+                                    | REST API
+                                    v
+                    +-------------------------------+
+                    |       BACKEND API             |
+                    |     Business Logic            |
+                    |                               |
+                    |  • Order management           |
+                    |  • Inventory control          |
+                    |  • Vendor management          |
+                    +-------+---------------+-------+
+                            |               |
+                      Saves |               | Publishes
+                       data |               | events
+                            v               v
+                    +-----------+     +-----------+
+                    |  MySQL    |     | RabbitMQ  |
+                    | Database  |     | Messaging |
+                    +-----------+     +-----+-----+
+                                            |
+                                            | Consumes
+                                            | events
+                                            v
+                    +-------------------------------+
+                    |         WORKER                |
+                    |    Background Service         |
+                    |                               |
+                    |  • Email notifications        |
+                    |  • Order processing           |
+                    |  • Inventory alerts           |
+                    +-------------------------------+
+
+
+APPLICATIONS SUMMARY:
+
+  Application     Role                Tech Stack
+  -----------     ----                ----------
+  Frontend        User Interface      Java 8, Spring Boot 2.7, JSP
+  Backend API     Business Logic      Java 8, Spring Boot 2.7, MySQL, RabbitMQ
+  Worker          Background Jobs     Java 8, Spring Boot 2.7, RabbitMQ
+
+---
 
 ## 🏗️ Architecture
 
