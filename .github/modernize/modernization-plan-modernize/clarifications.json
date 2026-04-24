@@ -1,0 +1,14 @@
+[
+  {
+    "question": "The playbook targets Java 25 and Spring Boot 4.0+, but the highest supported upgrade versions are Java 21 and Spring Boot 3.x. The plan currently targets Java 21 / Spring Boot 3.x. Should we proceed with these supported versions, or do you require Java 25 / Spring Boot 4.0+ (which would need custom handling)?",
+    "answer": ""
+  },
+  {
+    "question": "The playbook requires migrating RestTemplate to ServiceMesh SDK (com.acme.mesh.ServiceMesh), SLF4J to InternalLogger (com.acme.logging.InternalLogger), and exception-based flow control to Result<T> (com.acme.commons.Result). These are custom library migrations with no matching automation skills. Should these be added as additional manual migration tasks in the plan?",
+    "answer": ""
+  },
+  {
+    "question": "The playbook specifies container base images using Java 25 (mcr.microsoft.com/openjdk/jdk:25-ubuntu and :25-distroless). Since the plan targets Java 21, it uses Java 21 container images instead. Should the container images align with Java 21 or Java 25?",
+    "answer": ""
+  }
+]

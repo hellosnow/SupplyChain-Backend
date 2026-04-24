@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-spring-boot-3x",
+      "description": "Upgrade from Spring Boot 2.7.18 / Java 8 to Spring Boot 3.x / Java 21, including Spring Framework 6.x and Jakarta EE namespace migration (javax.* to jakarta.*).",
+      "reason": "The application uses end-of-life Java 8 and end-of-OSS-support Spring Boot 2.7.18. Upgrading resolves mandatory assessment findings (spring-boot-to-azure-spring-boot-version-01000, spring-framework-version-01000, azure-java-version-02000) and is required before Azure service migrations.",
+      "requirements": "Upgrade Spring Boot parent from 2.7.18 to latest 3.x. Upgrade Java version from 8 to 21. Migrate all javax.* imports to jakarta.* namespace. Update Spring Framework to 6.x. Ensure all existing unit tests pass after upgrade.",
+      "dependencies": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-migration-mysql-to-azure-mysql",
+      "description": "Migrate from on-premises MySQL to Azure Database for MySQL with managed identity for secure, credential-free authentication.",
+      "reason": "Assessment finding azure-database-mysql-01000 identified MySQL database usage with hardcoded credentials. Migrating to Azure Database for MySQL with managed identity eliminates password-based authentication and provides a fully managed database service.",
+      "requirements": "Migrate MySQL database connection to Azure Database for MySQL. Use managed identity for authentication instead of username/password. Update Spring Data JPA configuration for Azure MySQL compatibility. Remove hardcoded database credentials from application.yml.",
+      "dependencies": ["001-upgrade-spring-boot-3x"],
+      "skills": [
+        {
+          "name": "migration-mi-mysql-azure-sdk-public-cloud",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-migration-rabbitmq-to-servicebus",
+      "description": "Migrate from RabbitMQ with Spring AMQP to Azure Service Bus for fully managed cloud messaging.",
+      "reason": "Assessment findings azure-message-queue-amqp-02000 and azure-message-queue-rabbitmq-01000 identified Spring AMQP/RabbitMQ usage in AppConfig.java, InventoryService.java, and PurchaseOrderService.java. Azure Service Bus provides a managed messaging service aligned with the Azure migration target.",
+      "requirements": "Replace RabbitMQ (spring-boot-starter-amqp) with Azure Service Bus. Migrate RabbitTemplate usage in PurchaseOrderService and InventoryService to Service Bus. Update queue configuration in AppConfig for Service Bus queues/topics. Remove RabbitMQ connection configuration from application.yml.",
+      "dependencies": ["001-upgrade-spring-boot-3x"],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-migration-credentials-to-keyvault",
+      "description": "Migrate hardcoded credentials from application.yml to Azure Key Vault for centralized and secure secrets management.",
+      "reason": "Assessment finding azure-password-01000 identified plaintext passwords in application.yml (database and RabbitMQ credentials). The playbook policy prohibits hardcoded credentials and requires Azure Key Vault for all sensitive values.",
+      "requirements": "Migrate all hardcoded credentials (database password, messaging credentials) from application.yml to Azure Key Vault. Configure Spring Cloud Azure Key Vault starter or managed identity for secret access. Ensure no plaintext secrets remain in configuration files or source code.",
+      "dependencies": ["001-upgrade-spring-boot-3x"],
+      "skills": [
+        {
+          "name": "migration-plaintext-credential-to-azure-keyvault",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "005-security-validate-cves-and-fix",
+      "description": "Validate all project dependencies for known CVE vulnerabilities and apply fixes to ensure a clean security posture.",
+      "reason": "User explicitly requested all CVE issues be fixed. Security scanning and remediation must occur after all upgrade and transform tasks to validate the final dependency tree.",
+      "requirements": "Scan all project dependencies for known CVE vulnerabilities. Fix all identified CVE issues by upgrading affected dependencies or applying recommended patches. Verify the project builds and all tests pass after remediation.",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x",
+        "002-transform-migration-mysql-to-azure-mysql",
+        "003-transform-migration-rabbitmq-to-servicebus",
+        "004-transform-migration-credentials-to-keyvault"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "006-containerization-update-dockerfile",
+      "description": "Update the Dockerfile to use Java 21 base images for the modernized application runtime, targeting Azure Container Apps deployment.",
+      "reason": "The existing Dockerfile uses Java 8 base images (maven:3.8-openjdk-8 and eclipse-temurin:8-jre) which are incompatible with the upgraded Java 21 application. The playbook specifies Microsoft OpenJDK container images.",
+      "requirements": "Update the multi-stage Dockerfile build image to mcr.microsoft.com/openjdk/jdk:21-ubuntu and runtime image to mcr.microsoft.com/openjdk/jdk:21-distroless. Update the JAR filename reference to match the modernized artifact. Ensure the container builds and runs correctly.",
+      "dockerfilePath": "Dockerfile",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x",
+        "002-transform-migration-mysql-to-azure-mysql",
+        "003-transform-migration-rabbitmq-to-servicebus",
+        "004-transform-migration-credentials-to-keyvault",
+        "005-security-validate-cves-and-fix"
+      ]
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-modernize",
+    "projectName": "supplychain-backend",
+    "language": "java",
+    "createdAt": "2026-04-24T08:46:52.648Z",
+    "version": "1.0"
+  }
+}
