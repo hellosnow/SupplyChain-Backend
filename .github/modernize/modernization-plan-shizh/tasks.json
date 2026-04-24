@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-spring-boot-3x",
+      "description": "Upgrade the project from Java 8 / Spring Boot 2.7.18 to Java 21 / Spring Boot 3.x, including Spring Framework 6.x and Jakarta EE migration (javax.* to jakarta.*).",
+      "reason": "The project uses Java 8 and Spring Boot 2.7.18, both of which are flagged as mandatory violations in the assessment (legacy Java version and end-of-OSS-support Spring Boot/Spring Framework). Upgrading is required before any Azure service migrations can proceed.",
+      "requirements": "Upgrade Java source and target from 8 to 21. Upgrade Spring Boot parent from 2.7.18 to the latest 3.x release. Update all Spring Framework dependencies to 6.x. Migrate all javax.* imports to jakarta.* as required by Jakarta EE. Ensure the project compiles and all existing tests pass after the upgrade.",
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-rabbitmq-to-servicebus",
+      "description": "Migrate Spring AMQP / RabbitMQ messaging to Azure Service Bus using Managed Identity for secure, credential-free authentication.",
+      "reason": "The application uses RabbitMQ with Spring AMQP and hardcoded credentials in application.yml. The assessment flags this as a messaging service migration concern. Azure Service Bus provides a fully managed alternative with Managed Identity support, eliminating hardcoded passwords.",
+      "requirements": "Replace the spring-boot-starter-amqp / RabbitMQ dependency and configuration with Azure Service Bus. Migrate message producers and consumers (including InventoryService and PurchaseOrderService) to use the Azure Service Bus SDK. Remove hardcoded RabbitMQ credentials from application.yml. Use Managed Identity for authentication to Azure Service Bus. Ensure queue/topic names align with the existing messaging contract (order.created, inventory.alert, approval.pending).",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x"
+      ],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "remote"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-mysql-to-azure-mysql-mi",
+      "description": "Migrate the MySQL database connection to Azure Database for MySQL using Managed Identity for secure, passwordless authentication.",
+      "reason": "The application connects to MySQL with hardcoded username and password in application.yml. The assessment flags this as a database migration and local credential concern. Azure Database for MySQL with Managed Identity eliminates the need for password-based credentials.",
+      "requirements": "Update the datasource configuration to target Azure Database for MySQL. Replace the password-based JDBC connection with a Managed Identity-based passwordless connection. Update the mysql-connector-java dependency as needed for Azure compatibility. Remove hardcoded credentials (root/root) from application.yml. Ensure Spring Data JPA and Hibernate continue to function correctly with the new database connection.",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x"
+      ],
+      "skills": [
+        {
+          "name": "migration-mi-mysql-azure-sdk-public-cloud",
+          "location": "remote"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "004-security-fix-cves",
+      "description": "Scan all project dependencies for known CVE vulnerabilities and remediate them to achieve a CVE-clean dependency tree.",
+      "reason": "The user explicitly requires all CVE issues to be fixed as part of this modernization. After upgrading frameworks and migrating services, a full CVE scan and remediation ensures the final codebase meets security compliance requirements.",
+      "requirements": "Scan all Maven dependencies for known CVEs using a vulnerability scanner. Upgrade or replace all dependencies with known CVEs to their latest secure versions. Ensure the project still builds and tests pass after dependency updates.",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x",
+        "002-transform-rabbitmq-to-servicebus",
+        "003-transform-mysql-to-azure-mysql-mi"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-shizh",
+    "projectName": "supplychain-backend",
+    "language": "java",
+    "createdAt": "2026-04-24T04:37:48.592Z",
+    "version": "1.0"
+  }
+}
