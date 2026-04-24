@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-spring-boot-3",
+      "description": "Upgrade Spring Boot from 2.7.18 to 3.x, including Java runtime upgrade from 8 to 21, Spring Framework upgrade from 5.x to 6.x, and Jakarta EE namespace migration (javax.* to jakarta.*).",
+      "reason": "The project uses Spring Boot 2.7.18 (end of OSS support), Java 8 (legacy version), and Spring Framework 5.x (end of OSS support). Assessment rules azure-java-version-02000, spring-boot-to-azure-spring-boot-version-01000, and spring-framework-version-01000 flag these as mandatory issues that must be resolved before cloud deployment.",
+      "requirements": "Upgrade Spring Boot parent version to 3.x in pom.xml. Update Java source and target compiler settings to 21. Migrate all javax.* imports to jakarta.* for Jakarta EE compatibility. Update any deprecated Spring APIs. Ensure the build compiles successfully and all existing unit tests pass after the upgrade.",
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-mysql-to-azure-mysql-mi",
+      "description": "Migrate the MySQL database connection from password-based authentication to Azure Database for MySQL using Managed Identity for secure, credential-free access.",
+      "reason": "The application uses a locally hosted MySQL instance with hardcoded password credentials in application.yml. Assessment rule azure-database-mysql-01000 flags the MySQL usage as a potential migration target to Azure Database for MySQL. Managed Identity eliminates the security risk of plaintext passwords.",
+      "requirements": "Replace the JDBC password-based MySQL connection with Azure Database for MySQL. Use Azure Managed Identity for passwordless authentication — remove the hardcoded username/password from application.yml. Update datasource configuration and any MySQL-specific dialect settings to be compatible with Azure Database for MySQL.",
+      "dependencies": ["001-upgrade-spring-boot-3"],
+      "skills": [
+        {
+          "name": "migration-mi-mysql-azure-sdk-public-cloud",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-rabbitmq-to-azure-servicebus",
+      "description": "Migrate Spring AMQP / RabbitMQ messaging to Azure Service Bus for fully managed, cloud-native messaging with Managed Identity authentication.",
+      "reason": "The application uses RabbitMQ via Spring AMQP in AppConfig, InventoryService, and PurchaseOrderService with hardcoded connection credentials in application.yml. Assessment rules azure-message-queue-rabbitmq-01000 and azure-message-queue-amqp-02000 identify this as an optional but recommended migration to Azure Service Bus.",
+      "requirements": "Replace all Spring AMQP / RabbitMQ dependencies, configuration beans (RabbitTemplate, Queue, ConnectionFactory), and usage in services with Azure Service Bus equivalents. Migrate the three queues (order.created, inventory.alert, approval.pending) to Azure Service Bus queues. Use Managed Identity for authentication — remove hardcoded RabbitMQ host/username/password from application.yml. Ensure producers and consumers in InventoryService and PurchaseOrderService are updated accordingly.",
+      "dependencies": ["001-upgrade-spring-boot-3"],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-plaintext-credentials-to-azure-keyvault",
+      "description": "Migrate all plaintext credentials and hardcoded secrets from application.yml to Azure Key Vault, accessed via Managed Identity.",
+      "reason": "The application stores plaintext database passwords and RabbitMQ credentials in application.yml. Assessment rule azure-password-01000 flags these as a security risk. Additionally, assessment rules localhost-http-00001, hardcoded-urls-00001, and unsecure-network-protocol-00000 identify hardcoded HTTP URLs and localhost references that must be resolved for cloud readiness.",
+      "requirements": "Remove all remaining plaintext credentials from application.yml (datasource password, RabbitMQ password). Store these secrets in Azure Key Vault and retrieve them at runtime using Managed Identity. Update application configuration to reference Key Vault secrets. Additionally, replace any hardcoded HTTP URLs (e.g., in VendorService) with HTTPS and remove localhost URL references from source code to ensure cloud readiness.",
+      "dependencies": ["001-upgrade-spring-boot-3"],
+      "skills": [
+        {
+          "name": "migration-plaintext-credential-to-azure-keyvault",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "005-security-cve-fix",
+      "description": "Scan all project dependencies for known CVE vulnerabilities and remediate them by upgrading or replacing affected libraries.",
+      "reason": "The user explicitly requires all CVE issues to be fixed as part of this modernization. Legacy dependencies (Java 8 runtime, Spring Boot 2.7.18, mysql-connector-java 8.0.33, spring-boot-starter-amqp) may carry known security vulnerabilities that must be resolved.",
+      "requirements": "Run a CVE scan against all project dependencies. Identify any libraries with known CVEs. Upgrade or replace the affected dependency versions to resolve all CVE findings. The project must pass a clean CVE scan after remediation.",
+      "dependencies": [
+        "001-upgrade-spring-boot-3",
+        "002-transform-mysql-to-azure-mysql-mi",
+        "003-transform-rabbitmq-to-azure-servicebus",
+        "004-transform-plaintext-credentials-to-azure-keyvault"
+      ],
+      "skills": [
+        {
+          "name": "validate-cves-and-fix",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-shizh",
+    "projectName": "supplychain-backend",
+    "language": "java",
+    "createdAt": "2026-04-24T03:19:34.085Z",
+    "version": "1.0"
+  }
+}
