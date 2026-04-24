@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-spring-boot-3x",
+      "description": "Upgrade from Spring Boot 2.7.18 / Java 8 to Spring Boot 3.x / Java 21, including Spring Framework 6.x and Jakarta EE namespace migration",
+      "reason": "Spring Boot 2.7.18 and Java 8 are end-of-life. Upgrading to Spring Boot 3.x with Java 21 ensures long-term support, security patches, and modern language features required for Azure deployment.",
+      "requirements": "Upgrade Spring Boot from 2.7.18 to latest 3.x, Java from 8 to 21, migrate javax.* to jakarta.* namespaces, update Spring Framework to 6.x, and ensure all existing functionality and tests pass after upgrade.",
+      "dependencies": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-mysql-to-azure-mysql-mi",
+      "description": "Migrate MySQL database connection to Azure Database for MySQL with managed identity for secure, credential-free authentication",
+      "reason": "The application uses MySQL with hardcoded credentials in application.yml, which is a security risk. Migrating to Azure Database for MySQL with managed identity eliminates credential management and follows Azure security best practices.",
+      "requirements": "Migrate the MySQL database connection to Azure Database for MySQL. Replace hardcoded database credentials with managed identity authentication. Update datasource configuration in application.yml. Ensure JPA and Hibernate continue to function correctly with Azure Database for MySQL.",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x"
+      ],
+      "skills": [
+        {
+          "name": "migration-mi-mysql-azure-sdk-public-cloud",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-rabbitmq-to-servicebus",
+      "description": "Migrate from RabbitMQ with Spring AMQP to Azure Service Bus for messaging",
+      "reason": "The application uses RabbitMQ with hardcoded credentials for messaging. Migrating to Azure Service Bus provides a fully managed cloud messaging service with built-in reliability and security.",
+      "requirements": "Migrate all RabbitMQ messaging to Azure Service Bus. Replace Spring AMQP RabbitMQ dependencies, configuration, RabbitTemplate usage, and queue definitions with Azure Service Bus equivalents. Migrate the three queues: order-created, inventory-alert, and approval-pending. Remove hardcoded RabbitMQ credentials from application.yml.",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x"
+      ],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "004-security-validate-cves-and-fix",
+      "description": "Validate all CVE vulnerabilities in project dependencies and fix security issues",
+      "reason": "The user explicitly requires all CVE issues to be fixed to ensure a secure and compliant application before deployment to Azure.",
+      "requirements": "Scan all project dependencies for known CVE vulnerabilities. Fix identified vulnerabilities by upgrading affected dependencies to patched versions. Ensure the application builds and all tests pass after remediation.",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x",
+        "002-transform-mysql-to-azure-mysql-mi",
+        "003-transform-rabbitmq-to-servicebus"
+      ],
+      "skills": [
+        {
+          "name": "validate-cves-and-fix",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "005-containerization-update-dockerfile",
+      "description": "Update the Dockerfile to use Java 21 base images compatible with the upgraded runtime",
+      "reason": "The existing Dockerfile uses Java 8 base images (maven:3.8-openjdk-8 and eclipse-temurin:8-jre) which are incompatible with the upgraded Java 21 runtime.",
+      "requirements": "Update the Dockerfile build stage and runtime stage base images to support Java 21. Ensure the multi-stage build pattern is preserved and the application can be built and run in the container.",
+      "dependencies": [
+        "001-upgrade-spring-boot-3x",
+        "002-transform-mysql-to-azure-mysql-mi",
+        "003-transform-rabbitmq-to-servicebus",
+        "004-security-validate-cves-and-fix"
+      ],
+      "dockerfilePath": "Dockerfile"
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-azure",
+    "projectName": "supplychain-backend",
+    "language": "java",
+    "createdAt": "2026-04-24T03:32:00.256Z",
+    "version": "1.0"
+  }
+}
