@@ -1,0 +1,10 @@
+{
+  "source": "https://github.com/hellosnow/modernization-playbook",
+  "files": [
+    "charter.md",
+    "targets.md",
+    "policies.md"
+  ],
+  "contentHash": "f428eebee432f36261d621b184284fbad0cc38bc49bb27d7c5f09233b10c61ab",
+  "commitSha": "d27ab06a1c365115045a9c9c2503796041f7a1bd"
+}
