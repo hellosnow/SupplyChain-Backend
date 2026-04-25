@@ -74,11 +74,10 @@ Given the user input, do this:
     - This integration test task should:
       - Have id format: "{sequence}-integrationTest" where sequence is the next number after the last migration task (e.g., if last migration is 001, use "002-integrationTest")
       - Have description: "Generate and run integration tests for Azure service migrations"
-      - Use the "integration-tests" skill with location "builtin"
       - Have dependencies on ALL transform and upgrade task ids (so it runs after all migrations are complete)
       - Have requirements: "Generate Layer 1 (Local Integration with TestContainers) and Layer 2 (Smoke Tests) for all Azure service migrations"
       - Have layers: [1, 2] (only Layer 1 and Layer 2 tests)
-      - Have environmentConfiguration: null
+      - Omit environmentConfiguration unless explicitly provided by user input
     - The integration test task appears in plan.md as a separate section after migration tasks but before containerization
 
     **Java Upgrade Task Guidelines**: Only add an upgrade task if the user explicitly requests it. You must refer to the ./java-upgrade-guideline.md for specific rules and guidelines when creating Java upgrade tasks.
