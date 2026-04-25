@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-java-springboot",
+      "description": "Upgrade the application from Java 8 and Spring Boot 2.7.18 to Java 25 and Spring Boot 4.0+",
+      "reason": "Java 8 and Spring Boot 2.x are end-of-life and prohibited for internal use per organizational policy (targets.md, charter.md). All supply chain services must target Java 25 and Spring Boot 4.0+ as the compliant runtime baseline.",
+      "requirements": "Upgrade the project to Java 25 and Spring Boot 4.0+. This includes updating the Java source/target compiler version to 25, upgrading the Spring Boot parent POM to 4.0+, migrating all javax.* imports to jakarta.* equivalents, addressing all Spring Boot 4.x breaking changes, and ensuring the project compiles and all tests pass after the upgrade. The target build base image is mcr.microsoft.com/openjdk/jdk:25-ubuntu and runtime image is mcr.microsoft.com/openjdk/jdk:25-distroless.",
+      "dependencies": [],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-rabbitmq-to-servicebus",
+      "description": "Migrate RabbitMQ AMQP messaging to Azure Service Bus",
+      "reason": "The application uses RabbitMQ (an on-premises message broker) for three queues: order-created, inventory-alert, and approval-pending. Migrating to Azure Service Bus provides a fully managed, cloud-native messaging service with Managed Identity authentication, eliminating the need for credential management.",
+      "requirements": "Migrate all RabbitMQ AMQP messaging to Azure Service Bus using Spring Messaging. Replace the Spring AMQP RabbitMQ dependencies with the Spring Cloud Azure Service Bus starter. Update all message producers (RabbitTemplate.convertAndSend calls in PurchaseOrderService and InventoryService) and any consumers to use Azure Service Bus equivalents. Configure Managed Identity authentication for all Service Bus connections. Map the three existing queues (order-created, inventory-alert, approval-pending) to Azure Service Bus queues. Remove hardcoded RabbitMQ credentials from application.yml.",
+      "dependencies": [
+        "001-upgrade-java-springboot"
+      ],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-mysql-to-azure-mysql-mi",
+      "description": "Migrate MySQL database connectivity to Azure Database for MySQL with Managed Identity",
+      "reason": "The application connects to MySQL using hardcoded credentials (root/root) in application.yml. Migrating to Azure Database for MySQL with Managed Identity eliminates hardcoded passwords, enforces passwordless authentication, and aligns with the organizational policy requiring Managed Identity for all service-to-service authentication.",
+      "requirements": "Migrate the Spring Boot datasource from password-based MySQL to Azure Database for MySQL using Managed Identity (passwordless authentication). Add the Spring Cloud Azure starter for MySQL, update the datasource configuration to use the Azure MySQL JDBC URL with Managed Identity plugin, and remove all hardcoded database credentials from application.yml. Ensure the updated configuration follows Spring Boot 4.0+ conventions.",
+      "dependencies": [
+        "001-upgrade-java-springboot"
+      ],
+      "skills": [
+        {
+          "name": "migration-mi-mysql",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-credentials-to-keyvault",
+      "description": "Migrate hardcoded plaintext credentials and secrets to Azure Key Vault",
+      "reason": "The application has hardcoded credentials in application.yml (database passwords, RabbitMQ credentials) and potentially in source code. Organizational policy prohibits hardcoded credentials in configuration files and source code; all sensitive values must be stored in Azure Key Vault and accessed via Managed Identity.",
+      "requirements": "Identify all remaining hardcoded credentials, API keys, connection strings, and sensitive configuration values in application.yml and source code. Migrate them to Azure Key Vault. Add the Spring Cloud Azure Key Vault starter and configure the application to load secrets from Azure Key Vault using Managed Identity. Ensure no plaintext secrets remain in source code, configuration files, or environment variables after migration.",
+      "dependencies": [
+        "001-upgrade-java-springboot"
+      ],
+      "skills": [
+        {
+          "name": "migration-plaintext-credential-to-azure-keyvault",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "005-security-cve-fix",
+      "description": "Scan all project dependencies for CVE vulnerabilities and upgrade to secure versions",
+      "reason": "The project uses Spring Boot 2.7.18 and other dependencies that may carry known CVEs. All CVE issues must be resolved before the application is containerized and deployed to Azure, per the user's explicit security requirement.",
+      "requirements": "Run a full CVE dependency scan on all project dependencies. Identify all dependencies with known vulnerabilities. Upgrade each affected dependency to the lowest available non-vulnerable version that is compatible with Spring Boot 4.0+ and Java 25. Ensure the project builds and all tests pass after upgrades. The final dependency set must have zero CVE findings.",
+      "environmentConfiguration": "Java 25 runtime and Maven 3.9+ build tool established by task 001-upgrade-java-springboot.",
+      "dependencies": [
+        "001-upgrade-java-springboot",
+        "002-transform-rabbitmq-to-servicebus",
+        "003-transform-mysql-to-azure-mysql-mi",
+        "004-transform-credentials-to-keyvault"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "006-containerize",
+      "description": "Update Dockerfile to use approved Microsoft OpenJDK Java 25 base images for Azure Container Apps deployment",
+      "reason": "The existing Dockerfile uses the legacy Java 8 base image (maven:3.8-openjdk-8 and eclipse-temurin:8-jre), which is end-of-life. The organization mandates mcr.microsoft.com/openjdk/jdk:25-ubuntu for the build stage and mcr.microsoft.com/openjdk/jdk:25-distroless for the runtime stage per targets.md.",
+      "requirements": "Update the Dockerfile to use a multi-stage build with mcr.microsoft.com/openjdk/jdk:25-ubuntu as the build stage image and mcr.microsoft.com/openjdk/jdk:25-distroless as the runtime stage image. Ensure the build stage runs Maven with Java 25, copies the compiled JAR into the distroless runtime image, exposes port 8080, and sets the entrypoint. The resulting container must be suitable for deployment to Azure Container Apps.",
+      "dockerfilePath": "Dockerfile",
+      "dependencies": [
+        "001-upgrade-java-springboot",
+        "002-transform-rabbitmq-to-servicebus",
+        "003-transform-mysql-to-azure-mysql-mi",
+        "004-transform-credentials-to-keyvault",
+        "005-security-cve-fix"
+      ]
+    },
+    {
+      "type": "deployment",
+      "id": "007-deploy-aca",
+      "description": "Generate Bicep IaC files and deploy the application to Azure Container Apps",
+      "reason": "The application must be deployed to Azure Container Apps per organizational policy (charter.md, targets.md). All supporting Azure infrastructure (Azure Container Registry, Azure Database for MySQL, Azure Service Bus, Azure Key Vault) must be provisioned and connected via Managed Identity.",
+      "requirements": "Generate Bicep IaC files to provision and configure: Azure Container Apps environment, Azure Container Registry for image storage, Azure Database for MySQL Flexible Server, Azure Service Bus namespace with queues (order-created, inventory-alert, approval-pending), Azure Key Vault for secrets, and all required Managed Identity role assignments. Deploy the containerized application image to Azure Container Apps using the generated Bicep templates.",
+      "targetAzureService": "Azure Container Apps",
+      "resourceStatus": "new",
+      "deploymentTool": "bicep",
+      "dependencies": [
+        "006-containerize"
+      ]
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-new",
+    "projectName": "supplychain-backend",
+    "language": "java",
+    "createdAt": "2026-04-25T10:01:59.234Z",
+    "version": "1.0"
+  }
+}
