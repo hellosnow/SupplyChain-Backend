@@ -1,1 +1,4 @@
 *
+!.gitignore
+!modernization-plan-demo-legacy/
+!modernization-plan-demo-legacy/**
