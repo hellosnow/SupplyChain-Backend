@@ -64,12 +64,8 @@
     "taskBase": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "id", "description", "reason", "requirements", "environmentConfiguration"],
+      "required": ["type", "id", "description", "requirements"],
       "properties": {
-        "_comment": {
-          "type": "string",
-          "description": "Human guidance for the task template; used by LLM and not required in generated tasks.json."
-        },
         "type": {
           "type": "string",
           "description": "Task type identifier."
@@ -91,17 +87,24 @@
           "description": "[The specific requirements for this task including: what to migrate (features, APIs, patterns), constraints (backward compatibility, modules to avoid), target Azure services, and technical preferences (authentication methods, patterns). It should describe high level requirements without dictating implementation details like API calls, package names, or code structure]"
         },
         "environmentConfiguration": {
-          "type": ["string", "null"],
-          "description": "[Environment configuration from user input (e.g. endpoint, access id), null if not specified]"
+          "type": ["string"],
+          "description": "[Environment configuration from user input (e.g. endpoint, access id). Omit this field if not specified]"
         },
         "status": {
-          "type": ["string", "null"],
+          "type": ["string"],
           "description": "Task execution status. Only has value after task is executed.",
-          "enum": [null, "pending", "started", "success", "failed", "skipped"]
+          "enum": ["pending", "started", "success", "failed", "skipped"]
         },
         "taskSummary": {
           "type": "string",
           "description": "Summary of task execution result. Only has value after task is executed."
+        },
+        "dependencies": {
+          "type": "array",
+          "description": "[List of task IDs that this task depends on. The task will only be executed after all its dependencies have completed successfully.]",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -132,17 +135,17 @@
       "description": "The task success criteria to validate after task execution.",
       "properties": {
         "passBuild": {
-          "type": ["string", "null"],
+          "type": ["string"],
           "default": "true",
           "description": "Project must compile successfully after migration, use default value if user does not specify"
         },
         "generateNewUnitTests": {
-          "type": ["string", "null"],
+          "type": ["string"],
           "default": "false",
           "description": "Create mock-based unit tests for newly added Azure integration code to ensure test coverage, use default value if user does not specify"
         },
         "passUnitTests": {
-          "type": ["string", "null"],
+          "type": ["string"],
           "default": "true",
           "description": "All unit tests must pass; mock dependent Azure resources if not provided, use default value if user does not specify"
         }
@@ -150,20 +153,23 @@
     },
     "successCriteriaStatus": {
       "type": "object",
+      "not": {
+        "type": "null"
+      },
       "additionalProperties": false,
-      "description": "Validation status for each success criteria. Only has values after success criteria validation is complete. true means passed, false means failed.",
+      "description": "Optional validation status for each success criterion. Omit this field until validation is complete. If present, use true/false string values.",
       "properties": {
         "passBuild": {
-          "type": ["string", "null"],
-          "description": "Validation status of passBuild criterion. true means passed, false means failed, null means not yet validated."
+          "type": ["string"],
+          "description": "Validation status of passBuild criterion. true means passed, false means failed."
         },
         "generateNewUnitTests": {
-          "type": ["string", "null"],
-          "description": "Validation status of generateNewUnitTests criterion. true means passed, false means failed, null means not yet validated."
+          "type": ["string"],
+          "description": "Validation status of generateNewUnitTests criterion. true means passed, false means failed."
         },
         "passUnitTests": {
-          "type": ["string", "null"],
-          "description": "Validation status of passUnitTests criterion. true means passed, false means failed, null means not yet validated."
+          "type": ["string"],
+          "description": "Validation status of passUnitTests criterion. true means passed, false means failed."
         }
       }
     },
@@ -173,7 +179,7 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "skills", "successCriteria"],
+          "required": ["type", "successCriteria"],
           "properties": {
             "type": {
               "const": "transform",
@@ -181,7 +187,7 @@
             },
             "skills": {
               "type": "array",
-              "description": "The skills that must be used for this task, e.g., 'migration-rabbitmq-to-servicebus-mi'",
+              "description": "The skills that will be used for this task, it is started with migration and looks like 'migration-rabbitmq-to-servicebus-mi'",
               "items": { "$ref": "#/$defs/skill" }
             },
             "successCriteria": { "$ref": "#/$defs/successCriteria" },
@@ -196,16 +202,11 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "skills", "successCriteria"],
+          "required": ["type", "successCriteria"],
           "properties": {
             "type": {
               "const": "upgrade",
               "description": "Upgrade task template"
-            },
-            "skills": {
-              "type": "array",
-              "description": "The skills that must be used for this task, e.g., 'migration-rabbitmq-to-servicebus-mi'",
-              "items": { "$ref": "#/$defs/skill" }
             },
             "successCriteria": { "$ref": "#/$defs/successCriteria" },
             "successCriteriaStatus": { "$ref": "#/$defs/successCriteriaStatus" }
@@ -268,16 +269,11 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "skills", "layers"],
+          "required": ["type", "layers"],
           "properties": {
             "type": {
               "const": "integrationTest",
               "description": "Integration test task template - Generate and run integration tests for migrated Azure services. Only include when user explicitly requests integration testing. This task runs after all transform/upgrade tasks but before containerization."
-            },
-            "skills": {
-              "type": "array",
-              "description": "The skill used for this task, must be 'integration-tests'",
-              "items": { "$ref": "#/$defs/skill" }
             },
             "layers": {
               "type": "array",
@@ -298,19 +294,14 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "skills", "successCriteria"],
+          "required": ["type", "successCriteria"],
           "properties": {
             "type": {
               "const": "security",
               "description": "Security task template - Include when security remediation, vulnerability scanning, or compliance checks are required."
             },
-            "skills": {
-              "type": "array",
-              "description": "The skills that will be used for this task. e.g. 'validate-cves-and-fix'",
-              "items": { "$ref": "#/$defs/skill" }
-            },
             "cveReport": {
-              "type": ["string", "null"],
+              "type": ["string"],
               "description": "Path to final-cve-report.json. Only has value after CVE checking is complete."
             },
             "successCriteria": { "$ref": "#/$defs/successCriteria" },
@@ -331,11 +322,6 @@
               "const": "infrastructure",
               "description": "Infrastructure task template - Generate IaC files (Bicep or Terraform) to provision Azure resources."
             },
-            "skills": {
-              "type": "array",
-              "description": "The skill used for this task, e.g., 'infrastructure-bicep-generation' or 'infrastructure-terraform-generation'",
-              "items": { "$ref": "#/$defs/skill" }
-            },
             "iacType": {
               "type": "string",
               "description": "Infrastructure as Code tool type.",
@@ -344,6 +330,11 @@
             "provision": {
               "type": "boolean",
               "description": "Whether to provision Azure resources after generating IaC files."
+            },            
+            "skills": {
+              "type": "array",
+              "description": "The skill used for this task, e.g., 'infrastructure-bicep-generation' or 'infrastructure-terraform-generation'",
+              "items": { "$ref": "#/$defs/skill" }
             }
           }
         }
