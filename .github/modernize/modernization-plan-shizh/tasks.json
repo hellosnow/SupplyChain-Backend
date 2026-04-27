@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "metadata": {
+    "planName": "modernization-plan-shizh",
+    "projectName": "SupplyChain Backend",
+    "language": "java",
+    "createdAt": "2026-04-27T07:55:43Z",
+    "version": "1.0"
+  },
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-springboot4-java25",
+      "description": "Upgrade the application from Java 8 / Spring Boot 2.7.18 to Java 25 / Spring Boot 4.x",
+      "reason": "The assessment reports Java 8 and Spring Boot 2.7.18 as end-of-life (rules azure-java-version-02000 and spring-boot-to-azure-spring-boot-version-01000). The organization's playbook targets Java 25 and Spring Boot 4.x as the required LTS versions. This upgrade is a prerequisite for all subsequent Azure service migration tasks.",
+      "requirements": "Upgrade the Spring Boot parent version from 2.7.18 to the latest 4.x release and set the Java source/target to 25. Perform the Jakarta EE namespace migration (javax.* → jakarta.*) throughout the codebase. Update all Spring Framework dependencies to 7.x. Ensure the project compiles and all existing tests pass after the upgrade.",
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-rabbitmq-to-servicebus",
+      "description": "Migrate RabbitMQ AMQP messaging to Azure Service Bus",
+      "reason": "The assessment identified RabbitMQ usage via Spring AMQP (rules azure-message-queue-rabbitmq-01000 and azure-message-queue-amqp-02000) in AppConfig.java, InventoryService.java, and PurchaseOrderService.java. The organization's modernization strategy requires replacing on-premises message brokers with Azure Service Bus for cloud-native managed messaging.",
+      "requirements": "Replace Spring AMQP RabbitMQ dependencies with Spring Cloud Azure Service Bus. Migrate all message producers and consumers (InventoryService.checkAndSendLowStockAlerts, PurchaseOrderService.createOrder) and the RabbitMQ bean configuration in AppConfig to use Azure Service Bus with Managed Identity authentication.",
+      "dependencies": ["001-upgrade-springboot4-java25"],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-mysql-to-azure-mysql-mi",
+      "description": "Migrate MySQL datasource to Azure Database for MySQL with Managed Identity",
+      "reason": "The assessment flagged MySQL with hardcoded credentials in application.yml (rule azure-database-mysql-01000). The playbook requires passwordless authentication via Managed Identity and prohibits hardcoded database passwords. Moving to Azure Database for MySQL with Managed Identity eliminates the credential risk and aligns with the cloud-native architecture.",
+      "requirements": "Replace the password-based MySQL datasource configuration in application.yml with Azure Database for MySQL using Managed Identity (passwordless) authentication via Spring Cloud Azure. Update the MySQL JDBC driver dependency to the Azure-compatible connector.",
+      "dependencies": ["001-upgrade-springboot4-java25"],
+      "skills": [
+        {
+          "name": "migration-mi-mysql",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-credentials-to-keyvault",
+      "description": "Migrate hardcoded plaintext credentials to Azure Key Vault",
+      "reason": "The assessment identified plaintext passwords in application.yml (rule azure-password-01000) for both the MySQL datasource and RabbitMQ connection. The playbook prohibits hardcoded credentials in configuration files and requires all sensitive values to be stored in Azure Key Vault.",
+      "requirements": "Remove all hardcoded passwords and sensitive connection strings from application.yml and any source code files. Configure the application to retrieve these secrets from Azure Key Vault using the Spring Cloud Azure Key Vault starter with Managed Identity.",
+      "dependencies": ["001-upgrade-springboot4-java25"],
+      "skills": [
+        {
+          "name": "migration-plaintext-credential-to-azure-keyvault",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "005-security-cve-remediation",
+      "description": "Validate and fix all CVE vulnerabilities in project dependencies",
+      "reason": "The user explicitly requested that all CVE issues be fixed. Dependencies such as mysql-connector-java 8.0.33 and Spring Boot 2.7.18 transitive libraries may carry known CVEs. Remediating these ensures the application meets the organization's security and compliance requirements.",
+      "requirements": "Scan all direct and transitive Maven dependencies for known CVE vulnerabilities. Upgrade affected libraries to the latest patched versions. Ensure no critical or high-severity CVEs remain in the final dependency set. The project must compile and all tests must pass after remediation.",
+      "dependencies": [
+        "001-upgrade-springboot4-java25",
+        "002-transform-rabbitmq-to-servicebus",
+        "003-transform-mysql-to-azure-mysql-mi",
+        "004-transform-credentials-to-keyvault"
+      ],
+      "skills": [
+        {
+          "name": "validate-cves-and-fix",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "006-containerization",
+      "description": "Update the Dockerfile to use approved Microsoft OpenJDK 25 base images for ACA deployment",
+      "reason": "The current Dockerfile uses obsolete Java 8 base images. The playbook requires mcr.microsoft.com/openjdk/jdk:25-ubuntu as the build stage image and mcr.microsoft.com/openjdk/jdk:25-distroless as the runtime stage image. Containerization is required for deployment to Azure Container Apps.",
+      "requirements": "Update the multi-stage Dockerfile to use mcr.microsoft.com/openjdk/jdk:25-ubuntu for the Maven build stage and mcr.microsoft.com/openjdk/jdk:25-distroless for the runtime stage. Ensure the image builds successfully and the application starts correctly inside the container.",
+      "dependencies": ["001-upgrade-springboot4-java25", "005-security-cve-remediation"],
+      "dockerfilePath": "Dockerfile"
+    },
+    {
+      "type": "deployment",
+      "id": "007-deployment-aca",
+      "description": "Deploy the application to Azure Container Apps using Bicep",
+      "reason": "The organization's modernization strategy (charter.md) mandates replatforming all Java supply chain services to Azure Container Apps. Deployment with Bicep IaC ensures repeatable, policy-compliant provisioning of ACA, Azure Key Vault, Azure Service Bus, Azure Database for MySQL, and their Managed Identity role assignments.",
+      "requirements": "Generate Bicep IaC files to provision Azure Container Apps, Azure Key Vault, Azure Service Bus, Azure Database for MySQL, Azure Container Registry, and supporting resources. Configure Managed Identity on the Container App with appropriate role assignments for each backing service. Deploy the containerized application image.",
+      "dependencies": ["006-containerization"],
+      "targetAzureService": "Azure Container Apps",
+      "resourceStatus": "new",
+      "deploymentTool": "bicep"
+    }
+  ]
+}
