@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-java-springboot",
+      "description": "Upgrade from Java 8 / Spring Boot 2.7.18 to Java 25 / Spring Boot 4.0+",
+      "reason": "Java 8 and Spring Boot 2.x are prohibited for internal use per corporate policy. targets.md mandates Java 25 (latest LTS) and Spring Boot 4.0+ for all supply chain services. Java 8, 11, and 17 are declared end-of-life for internal use.",
+      "requirements": "Upgrade the project to Java 25 and Spring Boot 4.0+. Update pom.xml parent version to Spring Boot 4.0+, set java.version, maven.compiler.source, and maven.compiler.target to 25. Migrate all javax.* imports to jakarta.* equivalents (JPA, Validation, etc.). Resolve all Spring Boot 4.x and Spring Framework 7.x breaking changes. Target build base image: mcr.microsoft.com/openjdk/jdk:25-ubuntu; runtime base image: mcr.microsoft.com/openjdk/jdk:25-distroless.",
+      "skills": [
+        {
+          "name": "create-java-upgrade-plan",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-rabbitmq-servicebus",
+      "description": "Migrate RabbitMQ AMQP messaging to Azure Service Bus",
+      "reason": "RabbitMQ is an on-premises message broker that must be replaced with Azure Service Bus as the org-mandated cloud messaging platform. The application currently uses Spring AMQP with 3 queues (order.created, inventory.alert, approval.pending). Hardcoded RabbitMQ credentials in application.yml violate the secrets management policy.",
+      "requirements": "Replace Spring AMQP RabbitMQ dependencies with Spring Cloud Azure Service Bus AMQP. Migrate all message producers and consumers in PurchaseOrderService and InventoryService to Azure Service Bus. Update application.yml to remove hardcoded RabbitMQ credentials and configure Azure Service Bus connection with Managed Identity. Migrate all 3 queues: order.created, inventory.alert, approval.pending.",
+      "dependencies": ["001-upgrade-java-springboot"],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-mysql-managed-identity",
+      "description": "Migrate MySQL password-based authentication to Azure Database for MySQL with Managed Identity",
+      "reason": "The current application uses hardcoded MySQL credentials (username: root, password: root) in application.yml. Per corporate security policy, hardcoded database passwords are prohibited and Managed Identity must be used for all Azure service-to-service authentication.",
+      "requirements": "Replace the MySQL JDBC password-based datasource configuration with Azure Database for MySQL Flexible Server using Managed Identity for passwordless authentication. Add Spring Cloud Azure MySQL starter dependency. Update spring.datasource configuration in application.yml. Remove hardcoded username and password credentials.",
+      "dependencies": ["001-upgrade-java-springboot"],
+      "skills": [
+        {
+          "name": "migration-mi-mysql",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-credentials-keyvault",
+      "description": "Migrate hardcoded plaintext credentials in application.yml to Azure Key Vault",
+      "reason": "application.yml contains hardcoded credentials including database password and RabbitMQ credentials. Per corporate security policy (policies.md), all sensitive values (credentials, API keys, connection strings) must be stored in Azure Key Vault and accessed via Spring Cloud Azure Key Vault starter or Managed Identity. Hardcoded credentials in configuration files are a prohibited pattern.",
+      "requirements": "Move all remaining hardcoded credentials from application.yml and source code to Azure Key Vault. Configure Spring Cloud Azure Key Vault starter to retrieve secrets at runtime using Managed Identity. Ensure no plaintext secrets remain in source code, application.yml, application.properties, or environment variables.",
+      "dependencies": ["001-upgrade-java-springboot"],
+      "skills": [
+        {
+          "name": "migration-plaintext-credential-to-azure-keyvault",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "005-transform-resttemplate-servicemesh",
+      "description": "Replace RestTemplate with ServiceMesh SDK for all service-to-service communication",
+      "reason": "RestTemplate is a prohibited technology per corporate policy (policies.md) because it bypasses the service mesh layer. All service-to-service communication must go through ServiceMesh SDK (com.acme.mesh.ServiceMesh) which provides automatic circuit breaking, mTLS termination, distributed tracing, and canary routing. Affected code: VendorService.getVendorRatingFromExternalService and AppConfig.restTemplate bean.",
+      "requirements": "Replace all usages of RestTemplate in VendorService with ServiceMesh SDK (com.acme.mesh.ServiceMesh). Remove the RestTemplate @Bean from AppConfig. Update VendorService.getVendorRatingFromExternalService to use ServiceMesh SDK for the vendor-rating-service call. Update pom.xml to add the ServiceMesh SDK dependency if not already present.",
+      "dependencies": ["001-upgrade-java-springboot"],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "006-transform-logging-internallogger",
+      "description": "Replace SLF4J (@Slf4j) with InternalLogger across all service classes",
+      "reason": "SLF4J and @Slf4j are prohibited technologies per corporate policy (policies.md) because they lack trace context integration. All logging must use InternalLogger (com.acme.logging.InternalLogger) which injects trace IDs, team tags, and structured JSON output. Affected files: PurchaseOrderService, InventoryService, VendorService.",
+      "requirements": "Remove all @Slf4j Lombok annotations and replace with InternalLogger (com.acme.logging.InternalLogger) in PurchaseOrderService, InventoryService, and VendorService. Update all log.info, log.warn, log.error, log.debug calls to use InternalLogger equivalents. Remove SLF4J and Logback direct dependencies from pom.xml if they are no longer needed after migration.",
+      "dependencies": ["001-upgrade-java-springboot"],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "007-transform-error-handling-result-pattern",
+      "description": "Replace exception-based flow control with Result<T> pattern across all service classes",
+      "reason": "Throwing exceptions for business logic flow control and using try/catch blocks for flow control are prohibited patterns per post-incident mandate P0-2024-0847 (policies.md). All business error handling must use the Result<T> pattern (com.acme.commons.Result). Affected files: PurchaseOrderService (IllegalArgumentException, IllegalStateException, RuntimeException), InventoryService (RuntimeException), VendorService (RuntimeException).",
+      "requirements": "Replace all exception-based business logic flow control with the Result<T> pattern (com.acme.commons.Result) in PurchaseOrderService, InventoryService, and VendorService. Update method return types as needed. Replace @ControllerAdvice global exception handlers for business exceptions with Result<T> and standard response wrappers. Add com.acme.commons.Result dependency to pom.xml if not already present.",
+      "dependencies": ["001-upgrade-java-springboot"],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "008-security-cve-fix",
+      "description": "Scan and remediate all CVE vulnerabilities in project dependencies",
+      "reason": "The current project uses Spring Boot 2.7.18 and mysql-connector-java 8.0.33, both of which have known CVE vulnerabilities. The user explicitly requires all CVE issues to be fixed. A CVE-clean dependency tree is required before containerization and deployment.",
+      "requirements": "Scan all project dependencies (direct and transitive) for known CVEs using the GitHub Security Advisories API. Identify all vulnerable packages. Upgrade or replace all vulnerable dependencies to CVE-free versions. Verify CVE-clean state after remediation. Key dependencies to check include: Spring Boot 2.7.18, mysql-connector-java 8.0.33, spring-amqp, spring-rabbit, and all transitive dependencies. Use the validate-cves-and-fix builtin skill for automated scanning and remediation.",
+      "dependencies": [
+        "001-upgrade-java-springboot",
+        "002-transform-rabbitmq-servicebus",
+        "003-transform-mysql-managed-identity",
+        "004-transform-credentials-keyvault",
+        "005-transform-resttemplate-servicemesh",
+        "006-transform-logging-internallogger",
+        "007-transform-error-handling-result-pattern"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "009-containerization",
+      "description": "Update Dockerfile to use Java 25 org-approved base images for ACA deployment",
+      "reason": "The current Dockerfile uses outdated Java 8 base images (maven:3.8-openjdk-8 and eclipse-temurin:8-jre) which are incompatible with the Java 25 upgrade and do not match the org-approved container targets defined in targets.md.",
+      "requirements": "Update the Dockerfile to use mcr.microsoft.com/openjdk/jdk:25-ubuntu as the build stage base image and mcr.microsoft.com/openjdk/jdk:25-distroless as the runtime stage base image. Maintain the multi-stage build pattern. Update the Maven version in the build stage if needed. Ensure the application JAR name matches the updated pom.xml version.",
+      "dependencies": [
+        "001-upgrade-java-springboot",
+        "002-transform-rabbitmq-servicebus",
+        "003-transform-mysql-managed-identity",
+        "004-transform-credentials-keyvault",
+        "005-transform-resttemplate-servicemesh",
+        "006-transform-logging-internallogger",
+        "007-transform-error-handling-result-pattern",
+        "008-security-cve-fix"
+      ],
+      "dockerfilePath": "Dockerfile"
+    },
+    {
+      "type": "infrastructure",
+      "id": "010-infrastructure-aca",
+      "description": "Generate Bicep IaC files to provision Azure Container Apps and all supporting Azure services",
+      "reason": "The modernized application targets Azure Container Apps (ACA) as the org-mandated compute platform. Bicep IaC files are required to provision ACA, Azure Database for MySQL, Azure Service Bus, Azure Key Vault, and Azure Container Registry in a repeatable, policy-compliant manner.",
+      "requirements": "Generate Bicep IaC files under ./infra/ to provision: Azure Container Apps environment and application, Azure Database for MySQL Flexible Server with Managed Identity, Azure Service Bus namespace with three queues (order.created, inventory.alert, approval.pending), Azure Key Vault for secrets management, and Azure Container Registry. Apply Managed Identity for all service-to-service authentication. Ensure TLS 1.2+ and data at rest encryption per corporate security policy.",
+      "dependencies": [
+        "001-upgrade-java-springboot",
+        "002-transform-rabbitmq-servicebus",
+        "003-transform-mysql-managed-identity",
+        "004-transform-credentials-keyvault",
+        "005-transform-resttemplate-servicemesh",
+        "006-transform-logging-internallogger",
+        "007-transform-error-handling-result-pattern",
+        "008-security-cve-fix",
+        "009-containerization"
+      ],
+      "iacType": "bicep",
+      "provision": false,
+      "skills": [
+        {
+          "name": "infrastructure-bicep-generation",
+          "location": "builtin"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-shizh",
+    "projectName": "supplychain-backend",
+    "language": "java",
+    "createdAt": "2026-04-27T06:55:34.000Z",
+    "version": "1.0"
+  }
+}
