@@ -1,0 +1,180 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/azure-appmod-cli/main/schemas/tasks-schema.json",
+  "description": "Tasks template for modernization plan. Generated for modernization-plan-shizh to upgrade SupplyChain Backend from Java 8 / Spring Boot 2.7.18 to Java 25 / Spring Boot 4.x and migrate to Azure services.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-springboot4",
+      "description": "Upgrade the application from Java 8 / Spring Boot 2.7.18 to Java 25 / Spring Boot 4.x, including Spring Framework 7.x and Jakarta EE namespace migration (javax.* to jakarta.*).",
+      "reason": "Assessment report identifies mandatory issues: legacy Java version (azure-java-version-02000), end-of-OSS-support Spring Boot 2.7.18 (spring-boot-to-azure-spring-boot-version-01000), and end-of-support Spring Framework 5.x (spring-framework-version-01000). Per targets.md, Java 25 and Spring Boot 4.x are required. Per charter.md, Java 8, 11, and 17 are end-of-life for internal use and Spring Boot 2.x and 3.x must be upgraded.",
+      "requirements": "Upgrade pom.xml to target Java 25 and Spring Boot 4.x (latest stable). Upgrade Spring Framework to 7.x. Migrate all javax.* imports to jakarta.* throughout the codebase. Update all Spring Boot managed dependency versions. Ensure Maven compiler is configured for Java 25. Fix any compilation issues arising from the upgrade.",
+      "environmentConfiguration": "Java 25, Maven 3.9+",
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-rabbitmq-to-servicebus",
+      "description": "Migrate Spring AMQP RabbitMQ messaging to Azure Service Bus with Managed Identity for passwordless authentication.",
+      "reason": "Assessment report identifies spring-amqp RabbitMQ usage (azure-message-queue-rabbitmq-01000 and azure-message-queue-amqp-02000). RabbitMQ is an on-premises broker incompatible with Azure cloud-native deployment. Hardcoded guest/guest credentials violate the secrets management policy in policies.md. Azure Service Bus is the target messaging service per targets.md.",
+      "requirements": "Replace spring-boot-starter-amqp dependency with Spring Cloud Azure Service Bus AMQP starter. Update AppConfig.java to remove RabbitMQ queue and RabbitTemplate bean definitions. Update InventoryService.java and PurchaseOrderService.java to replace RabbitTemplate usage with the Azure Service Bus messaging equivalent. Update application.yml to remove RabbitMQ connection settings and configure Azure Service Bus connection using Managed Identity (no connection string passwords). Migrate the three queues (order.created, inventory.alert, approval.pending) to Azure Service Bus queues.",
+      "environmentConfiguration": "Java 25, Maven 3.9+, Spring Boot 4.x",
+      "dependencies": [
+        "001-upgrade-springboot4"
+      ],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-mysql-managed-identity",
+      "description": "Migrate the MySQL datasource from password-based authentication to Azure Database for MySQL using Managed Identity for passwordless authentication.",
+      "reason": "Assessment report identifies MySQL usage (azure-database-mysql-01000) and hardcoded password in application.yml (azure-password-01000, line 13). Per policies.md, service-to-service authentication must use Managed Identity and hardcoded credentials are prohibited. Azure Database for MySQL is the target managed database service.",
+      "requirements": "Replace the mysql-connector-java dependency with the Spring Cloud Azure Starter for passwordless MySQL connection. Update application.yml to remove the hardcoded username/password fields in the datasource configuration and configure Azure Database for MySQL with Managed Identity. Update the Spring datasource configuration to use Azure Active Directory authentication plugin for passwordless auth. Ensure Hibernate dialect is updated for MySQL 8+ compatibility with Spring Boot 4.x.",
+      "environmentConfiguration": "Java 25, Maven 3.9+, Spring Boot 4.x",
+      "dependencies": [
+        "001-upgrade-springboot4"
+      ],
+      "skills": [
+        {
+          "name": "migration-mi-mysql",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-credentials-to-keyvault",
+      "description": "Remove all remaining hardcoded plaintext credentials and secrets from application configuration and source code, and store them securely in Azure Key Vault.",
+      "reason": "Assessment identifies azure-password-01000 violations (application.yml lines 13 and 31). Per policies.md, sensitive values (credentials, API keys, connection strings) must be stored in Azure Key Vault and accessed via the Spring Cloud Azure Key Vault starter or Managed Identity. Per policies.md required elements, every modernized application must include Azure Key Vault for secrets management.",
+      "requirements": "Add Spring Cloud Azure Key Vault starter dependency to pom.xml. Update application.yml to externalize all remaining sensitive configuration values to Azure Key Vault references. Configure Azure Key Vault access using Managed Identity. Remove any remaining hardcoded secrets, passwords, API keys, or connection strings from application.yml, application.properties, and Java source files.",
+      "environmentConfiguration": "Java 25, Maven 3.9+, Spring Boot 4.x",
+      "dependencies": [
+        "001-upgrade-springboot4"
+      ],
+      "skills": [
+        {
+          "name": "migration-plaintext-credential-to-azure-keyvault",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "005-transform-resttemplate-to-servicemesh",
+      "description": "Replace RestTemplate usage with the internal ServiceMesh SDK (com.acme.mesh.ServiceMesh) for all service-to-service HTTP communication.",
+      "reason": "Per policies.md and targets.md, RestTemplate is a prohibited technology that bypasses the service mesh layer. All service-to-service communication must use the ServiceMesh SDK which provides automatic circuit breaking, mTLS termination, distributed tracing, and canary routing. Assessment identifies localhost-http-00001, hardcoded-urls-00001, and unsecure-network-protocol-00000 violations originating from the RestTemplate usage in VendorService.java.",
+      "requirements": "Remove the RestTemplate bean definition from AppConfig.java. Replace the RestTemplate field in VendorService.java with ServiceMesh SDK (com.acme.mesh.ServiceMesh). Update the getVendorRatingFromExternalService method to use the ServiceMesh SDK API for the HTTP call to vendor-rating-service. Replace the hardcoded HTTP URL with the ServiceMesh SDK service discovery or configuration-based approach. Ensure all inter-service calls use HTTPS via the mesh layer.",
+      "environmentConfiguration": "Java 25, Maven 3.9+, Spring Boot 4.x",
+      "dependencies": [
+        "001-upgrade-springboot4"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "006-transform-slf4j-to-internallogger",
+      "description": "Replace all SLF4J / Logback logging annotations and usage with InternalLogger (com.acme.logging.InternalLogger) in all service and application classes.",
+      "reason": "Per policies.md, SLF4J, Log4j, and Logback are prohibited technologies because they do not integrate with the internal trace context system. InternalLogger is the mandatory sole logging framework that injects trace IDs, team tags, and structured JSON. VendorService.java, InventoryService.java, and PurchaseOrderService.java all use @Slf4j and log.* calls.",
+      "requirements": "Remove the @Slf4j Lombok annotation from all service classes. Remove SLF4J / Logback dependencies from pom.xml if present as explicit dependencies. Add InternalLogger (com.acme.logging.InternalLogger) dependency to pom.xml if needed. Replace all log.info, log.warn, log.error, log.debug calls with the InternalLogger equivalent in VendorService.java, InventoryService.java, PurchaseOrderService.java, and any other class using SLF4J. Remove any logback configuration file if present. Update the logging configuration in application.yml accordingly.",
+      "environmentConfiguration": "Java 25, Maven 3.9+, Spring Boot 4.x",
+      "dependencies": [
+        "001-upgrade-springboot4"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "007-transform-exceptions-to-result",
+      "description": "Replace exception-based business-logic flow control with the Result<T> pattern (com.acme.commons.Result) across all service classes.",
+      "reason": "Per policies.md (post-incident mandate P0-2024-0847), throwing exceptions for business logic flow control and using try/catch blocks for flow control are prohibited patterns. VendorService.java, InventoryService.java, and PurchaseOrderService.java all throw RuntimeException, IllegalArgumentException, or IllegalStateException for business validation, and use try/catch blocks to swallow messaging errors.",
+      "requirements": "Add the Result<T> pattern dependency (com.acme.commons.Result) to pom.xml. Replace all throw statements used for business validation logic with Result<T> return values in VendorService.java, InventoryService.java, and PurchaseOrderService.java. Update method signatures to return Result<T> instead of throwing exceptions. Replace try/catch blocks used for flow control (e.g., error swallowing around message sends) with Result<T>. Update all callers in controller classes to handle Result<T> responses instead of catching exceptions.",
+      "environmentConfiguration": "Java 25, Maven 3.9+, Spring Boot 4.x",
+      "dependencies": [
+        "001-upgrade-springboot4"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "008-security-cve-remediation",
+      "description": "Scan all Maven project dependencies for known CVE vulnerabilities and upgrade or replace any vulnerable packages to achieve a clean security posture.",
+      "reason": "User explicitly requires all CVE issues to be fixed. The current pom.xml uses Spring Boot 2.7.18 (End of OSS Support) and mysql-connector-java:8.0.33, both of which may carry known CVEs. After the Spring Boot 4.x upgrade and service migrations in tasks 1-7, remaining transitive dependencies must also be checked.",
+      "requirements": "Run CVE scan across all Maven dependencies. For each identified vulnerability, determine the minimum non-vulnerable version and update the dependency version accordingly. Add dependency overrides in pom.xml as needed. Ensure the final dependency tree is free of known CVEs. Re-run the build and unit tests after each fix to confirm no regressions.",
+      "environmentConfiguration": "Java 25, Maven 3.9+, Spring Boot 4.x",
+      "dependencies": [
+        "001-upgrade-springboot4",
+        "002-transform-rabbitmq-to-servicebus",
+        "003-transform-mysql-managed-identity",
+        "004-transform-credentials-to-keyvault",
+        "005-transform-resttemplate-to-servicemesh",
+        "006-transform-slf4j-to-internallogger",
+        "007-transform-exceptions-to-result"
+      ],
+      "skills": [
+        {
+          "name": "validate-cves-and-fix",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "009-containerization-dockerfile-java25",
+      "description": "Update the existing Dockerfile to use approved Microsoft OpenJDK Java 25 base images for the build and runtime stages, ready for Azure Container Apps deployment.",
+      "reason": "The existing Dockerfile uses end-of-life maven:3.8-openjdk-8 and eclipse-temurin:8-jre base images which are not on the approved image list and do not match the upgraded Java 25 runtime. Per targets.md, the approved images are mcr.microsoft.com/openjdk/jdk:25-ubuntu (build stage) and mcr.microsoft.com/openjdk/jdk:25-distroless (runtime stage). The charter targets Azure Container Apps as the deployment platform.",
+      "requirements": "Update the Dockerfile build stage FROM to mcr.microsoft.com/openjdk/jdk:25-ubuntu with Maven 3.9+. Update the Dockerfile runtime stage FROM to mcr.microsoft.com/openjdk/jdk:25-distroless. Update the artifact name in the COPY command to reflect the updated pom.xml version after modernization. Ensure the container listens on port 8080. Validate the Dockerfile builds successfully.",
+      "environmentConfiguration": "Java 25, Maven 3.9+",
+      "dockerfilePath": "Dockerfile",
+      "dependencies": [
+        "008-security-cve-remediation"
+      ]
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan-shizh",
+    "projectName": "SupplyChain Backend",
+    "language": "java",
+    "createdAt": "2026-04-28T02:55:00Z",
+    "version": "1.0"
+  }
+}
