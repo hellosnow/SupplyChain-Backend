@@ -1,0 +1,162 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/appmod-skills/main/tasks-schema.json",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-spring-boot-4",
+      "description": "Upgrade the project from Java 8 / Spring Boot 2.7.18 to Java 25 / Spring Boot 4.x, including all javax.* to jakarta.* namespace migrations and Spring Framework 7.x compatibility updates.",
+      "reason": "The project uses Java 8 and Spring Boot 2.7.18, both of which are end-of-life for internal use per Acme Corp policy. Targets mandate Java 25 LTS and Spring Boot 4.x. This is a prerequisite for all subsequent Azure service migration tasks.",
+      "requirements": "Upgrade Spring Boot parent POM from 2.7.18 to the latest Spring Boot 4.x release. Update Maven compiler settings to Java 25. Migrate all javax.* imports to jakarta.* (Jakarta EE 10). Resolve any API compatibility issues introduced by Spring Boot 4.x and Spring Framework 7.x. Ensure the project builds and all existing tests pass after the upgrade.",
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-rabbitmq-to-servicebus",
+      "description": "Migrate RabbitMQ Spring AMQP messaging to Azure Service Bus using Managed Identity authentication.",
+      "reason": "The application uses RabbitMQ with hardcoded guest credentials for three message queues (order.created, inventory.alert, approval.pending). Per Acme Corp policy, messaging must use Azure managed services with Managed Identity. The AppCAT assessment flagged this as azure-message-queue-amqp-02000 and azure-message-queue-rabbitmq-01000.",
+      "requirements": "Replace spring-boot-starter-amqp (RabbitMQ) with Spring Cloud Azure Service Bus JMS starter. Migrate all RabbitTemplate usages in InventoryService and PurchaseOrderService to Azure Service Bus. Migrate the three queues (order.created, inventory.alert, approval.pending) to Azure Service Bus queues or topics. Update application.yml to remove RabbitMQ connection settings and add Azure Service Bus connection configuration using Managed Identity (no passwords). Ensure Managed Identity is used for authentication.",
+      "dependencies": ["001-upgrade-spring-boot-4"],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-mysql-to-azure-mysql-mi",
+      "description": "Migrate MySQL JDBC connection from password-based authentication to Azure Database for MySQL with Managed Identity.",
+      "reason": "The application connects to MySQL using a hardcoded root password in application.yml. Per Acme Corp policy, database credentials must use Managed Identity (passwordless). The AppCAT assessment flagged this as azure-database-mysql-01000 and azure-password-01000.",
+      "requirements": "Replace the mysql-connector-java dependency with the Azure-compatible MySQL JDBC driver supporting Managed Identity. Add Spring Cloud Azure starter for MySQL. Update application.yml datasource configuration to remove the hardcoded password and enable passwordless Managed Identity authentication for Azure Database for MySQL. Ensure the Hibernate dialect is compatible with Azure Database for MySQL. Remove useSSL=false from the JDBC URL and configure SSL appropriately for Azure.",
+      "dependencies": ["001-upgrade-spring-boot-4"],
+      "skills": [
+        {
+          "name": "migration-mi-mysql",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-credentials-to-keyvault",
+      "description": "Migrate all plaintext credentials in application.yml to Azure Key Vault using Managed Identity.",
+      "reason": "The application stores database and RabbitMQ passwords as plaintext in application.yml. Per Acme Corp policies, all sensitive values must be stored in Azure Key Vault and accessed via Managed Identity. The AppCAT assessment flagged this as azure-password-01000.",
+      "requirements": "Add the Spring Cloud Azure Key Vault starter dependency to pom.xml. Configure the application to load secrets from Azure Key Vault using Managed Identity (no client secrets or connection strings). Remove any remaining plaintext passwords from application.yml. Ensure all sensitive configuration values (connection strings, API keys, any remaining credentials) are externalized to Azure Key Vault.",
+      "dependencies": ["001-upgrade-spring-boot-4"],
+      "skills": [
+        {
+          "name": "migration-plaintext-credential-to-azure-keyvault",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "005-transform-resttemplate-to-servicemesh",
+      "description": "Replace RestTemplate HTTP calls with ServiceMesh SDK for compliant service-to-service communication.",
+      "reason": "VendorService uses RestTemplate with a hardcoded HTTP URL to call an external vendor-rating service. RestTemplate is prohibited by Acme Corp policy as it bypasses the service mesh layer. The AppCAT assessment flagged this as localhost-http-00001, hardcoded-urls-00001, and unsecure-network-protocol-00000. All inter-service calls must use com.acme.mesh.ServiceMesh.",
+      "requirements": "Replace RestTemplate injection and usage in VendorService with the ServiceMesh SDK (com.acme.mesh.ServiceMesh). Replace the hardcoded HTTP URL 'http://vendor-rating-service/api/ratings/' with the mesh-compatible service routing. Remove RestTemplate bean configuration from AppConfig. Ensure the call uses HTTPS-equivalent mesh routing (mTLS handled by the mesh). Update AppConfig.java to remove the RestTemplate bean definition. Apply the same pattern to any other RestTemplate usages discovered in the codebase.",
+      "dependencies": ["001-upgrade-spring-boot-4"],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "006-transform-logging-to-internallogger",
+      "description": "Replace SLF4J (@Slf4j) and System.out.println with InternalLogger across all application classes.",
+      "reason": "The project uses SLF4J via Lombok's @Slf4j annotation in VendorService, PurchaseOrderService, and InventoryService, and System.out.println in the main class. Acme Corp policy mandates InternalLogger (com.acme.logging.InternalLogger) as the sole logging framework for structured JSON output with automatic trace-ID and team-tag injection. SLF4J and Logback are prohibited.",
+      "requirements": "Replace all @Slf4j Lombok annotations with InternalLogger (com.acme.logging.InternalLogger) instance variables in all service classes. Replace System.out.println calls in SupplyChainBackendApplication with InternalLogger. Remove SLF4J and Logback dependencies if they are no longer needed after migration. Update logging configuration (application.yml logging section) if necessary to align with InternalLogger output format.",
+      "dependencies": ["001-upgrade-spring-boot-4"],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "007-transform-error-handling-to-result",
+      "description": "Replace exception-based business flow control with the Result<T> pattern across all service and controller classes.",
+      "reason": "VendorService, PurchaseOrderService, and InventoryService throw RuntimeException, IllegalArgumentException, and IllegalStateException for business logic flow control, and use try/catch blocks to swallow errors. This pattern is prohibited per the P0-2024-0847 post-incident mandate. All business error handling must use com.acme.commons.Result<T>.",
+      "requirements": "Replace all orElseThrow() calls, throw statements for business logic validation, and try/catch flow-control blocks in VendorService, PurchaseOrderService, and InventoryService with Result<T> (com.acme.commons.Result). Update all controller methods (VendorController, PurchaseOrderController, InventoryController) to handle Result<T> responses and translate them to appropriate HTTP responses. Remove @ControllerAdvice global exception handlers if present. Ensure all business validation returns Result<T> instead of throwing exceptions.",
+      "dependencies": ["001-upgrade-spring-boot-4"],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "008-security-cve-fix",
+      "description": "Scan all project dependencies for known CVE vulnerabilities and remediate by upgrading to patched versions.",
+      "reason": "The user explicitly requires all CVE issues to be fixed. The project uses older dependency versions (Spring Boot 2.7.18, mysql-connector-java 8.0.33) that may have known vulnerabilities. After all upgrade and migration tasks are complete, a final CVE scan ensures the modernized project has no known security vulnerabilities.",
+      "requirements": "Scan all direct and transitive Maven dependencies in pom.xml for known CVE vulnerabilities. For each identified CVE, upgrade the affected dependency to the minimum version that resolves the vulnerability. Ensure the project still builds and tests pass after all dependency version upgrades. Produce a final CVE report confirming zero known vulnerabilities.",
+      "dependencies": [
+        "001-upgrade-spring-boot-4",
+        "002-transform-rabbitmq-to-servicebus",
+        "003-transform-mysql-to-azure-mysql-mi",
+        "004-transform-credentials-to-keyvault",
+        "005-transform-resttemplate-to-servicemesh",
+        "006-transform-logging-to-internallogger",
+        "007-transform-error-handling-to-result"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "containerization",
+      "id": "009-containerization",
+      "description": "Containerize the application using a multi-stage Dockerfile with approved Microsoft OpenJDK base images for Azure Container Apps deployment.",
+      "reason": "Azure Container Apps requires a container image. The Acme Corp playbook mandates specific base images: mcr.microsoft.com/openjdk/jdk:25-ubuntu for the build stage and mcr.microsoft.com/openjdk/jdk:25-distroless for the runtime stage.",
+      "requirements": "Create or update the Dockerfile using a multi-stage build. Build stage must use mcr.microsoft.com/openjdk/jdk:25-ubuntu. Runtime stage must use mcr.microsoft.com/openjdk/jdk:25-distroless. The Dockerfile must build the Maven project and package the JAR. Expose port 8080. Ensure the container runs as a non-root user. Verify the image builds successfully.",
+      "dockerfilePath": "Dockerfile",
+      "dependencies": ["008-security-cve-fix"]
+    },
+    {
+      "type": "deployment",
+      "id": "010-deployment-aca",
+      "description": "Deploy the containerized SupplyChain Backend to Azure Container Apps using Bicep IaC.",
+      "reason": "The Acme Corp modernization strategy mandates replatforming all Java services to Azure Container Apps (ACA). Deployment provisions all required Azure resources and deploys the container image.",
+      "requirements": "Generate Bicep IaC files to provision: Azure Container Apps environment and container app, Azure Container Registry for the image, Azure Database for MySQL Flexible Server, Azure Service Bus namespace with queues, Azure Key Vault, and all necessary Managed Identity role assignments. Deploy the application to Azure Container Apps with Managed Identity enabled. Ensure environment variables reference Key Vault secrets via Managed Identity, not plaintext values.",
+      "targetAzureService": "Azure Container Apps",
+      "resourceStatus": "create new",
+      "deploymentTool": "bicep",
+      "dependencies": ["009-containerization"]
+    }
+  ],
+  "metadata": {
+    "planName": "modernize-supply-chain",
+    "projectName": "SupplyChain Backend",
+    "language": "java",
+    "createdAt": "2026-04-28T03:05:46Z",
+    "version": "1.0"
+  }
+}
