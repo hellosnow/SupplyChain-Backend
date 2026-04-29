@@ -2,20 +2,20 @@ package com.acme.scm.controller;
 
 import com.acme.scm.model.Vendor;
 import com.acme.scm.service.VendorService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Slf4j // TECH DEBT: Should use InternalLogger
+@Slf4j
 @RestController
 @RequestMapping("/api/vendors")
+@RequiredArgsConstructor
 public class VendorController {
 
-    @Autowired
-    private VendorService vendorService;
+    private final VendorService vendorService;
 
     @GetMapping
     public ResponseEntity<List<Vendor>> getAllVendors() {

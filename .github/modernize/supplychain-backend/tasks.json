@@ -1,0 +1,379 @@
+{
+  "metadata": {
+    "project": "supplychain-backend",
+    "generatedAt": "2026-04-09T14:00:00Z",
+    "assessmentSource": ".github/modernize/supplychain-backend/assessment.yaml",
+    "appcatReportSource": ".github/appmod/appcat/result/report.json",
+    "totalTasks": 13,
+    "totalPhases": 4,
+    "estimatedEffort": 140,
+    "effortUnit": "story_points"
+  },
+  "tasks": [
+    {
+      "id": "java-pom-version-upgrade",
+      "phase": 1,
+      "phaseTitle": "Java Version Upgrade",
+      "title": "Upgrade Java 8 → 17 in POM",
+      "type": "upgrade",
+      "severity": "mandatory",
+      "effort": 5,
+      "agent": "modernize-java-upgrade",
+      "appcatRuleIds": ["azure-java-version-02000"],
+      "target": {
+        "java_version": "17"
+      },
+      "affectedFiles": [
+        "pom.xml"
+      ],
+      "changes": [
+        "Update <java.version> from 8 to 17",
+        "Update <maven.compiler.source> from 8 to 17",
+        "Update <maven.compiler.target> from 8 to 17"
+      ],
+      "dependencies": [],
+      "successCriteria": "mvn compile succeeds with Java 17 compiler settings",
+      "status": "pending"
+    },
+    {
+      "id": "dockerfile-java17-update",
+      "phase": 1,
+      "phaseTitle": "Java Version Upgrade",
+      "title": "Update Dockerfile base images to Java 17",
+      "type": "upgrade",
+      "severity": "mandatory",
+      "effort": 3,
+      "agent": "modernize-java-upgrade",
+      "appcatRuleIds": ["dockerfile-java8-base-image"],
+      "target": {
+        "java_version": "17"
+      },
+      "affectedFiles": [
+        "Dockerfile"
+      ],
+      "changes": [
+        "Build stage: maven:3.8-openjdk-8 → maven:3-eclipse-temurin-17",
+        "Runtime stage: eclipse-temurin:8-jre → eclipse-temurin:17-jre",
+        "Verify JAR filename matches in COPY instruction"
+      ],
+      "dependencies": ["java-pom-version-upgrade"],
+      "successCriteria": "docker build succeeds with Java 17 base images",
+      "status": "pending"
+    },
+    {
+      "id": "springboot-version-upgrade",
+      "phase": 2,
+      "phaseTitle": "Spring Boot Upgrade",
+      "title": "Upgrade Spring Boot 2.7.18 → 3.2+",
+      "type": "upgrade",
+      "severity": "mandatory",
+      "effort": 8,
+      "agent": "modernize-java-upgrade",
+      "appcatRuleIds": [
+        "spring-boot-to-azure-spring-boot-version-01000",
+        "spring-framework-version-01000"
+      ],
+      "target": {
+        "springboot_version": "3.2"
+      },
+      "affectedFiles": [
+        "pom.xml"
+      ],
+      "changes": [
+        "Update spring-boot-starter-parent version from 2.7.18 to 3.2.x (latest stable)",
+        "Spring Framework automatically upgrades from 5.3.x to 6.x"
+      ],
+      "dependencies": ["java-pom-version-upgrade"],
+      "successCriteria": "POM dependency resolution succeeds with Spring Boot 3.2+",
+      "status": "pending"
+    },
+    {
+      "id": "javax-to-jakarta-migration",
+      "phase": 2,
+      "phaseTitle": "Spring Boot Upgrade",
+      "title": "Migrate javax.persistence → jakarta.persistence",
+      "type": "upgrade",
+      "severity": "mandatory",
+      "effort": 8,
+      "agent": "modernize-java-upgrade",
+      "appcatRuleIds": ["javax-to-jakarta-namespace"],
+      "target": {
+        "namespace": "jakarta"
+      },
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/model/Vendor.java",
+        "src/main/java/com/acme/scm/model/PurchaseOrder.java",
+        "src/main/java/com/acme/scm/model/Inventory.java"
+      ],
+      "changes": [
+        "Replace 'import javax.persistence.*' with 'import jakarta.persistence.*' in Vendor.java",
+        "Replace 'import javax.persistence.*' with 'import jakarta.persistence.*' in PurchaseOrder.java",
+        "Replace 'import javax.persistence.*' with 'import jakarta.persistence.*' in Inventory.java"
+      ],
+      "dependencies": ["springboot-version-upgrade"],
+      "successCriteria": "All 3 entity classes compile with jakarta.persistence imports",
+      "status": "pending"
+    },
+    {
+      "id": "mysql-connector-rename",
+      "phase": 2,
+      "phaseTitle": "Spring Boot Upgrade",
+      "title": "Rename MySQL connector dependency",
+      "type": "upgrade",
+      "severity": "mandatory",
+      "effort": 3,
+      "agent": "modernize-java-upgrade",
+      "appcatRuleIds": ["spring-boot-to-azure-spring-boot-version-01000"],
+      "target": {
+        "artifact": "com.mysql:mysql-connector-j"
+      },
+      "affectedFiles": [
+        "pom.xml"
+      ],
+      "changes": [
+        "Change groupId from 'mysql' to 'com.mysql'",
+        "Change artifactId from 'mysql-connector-java' to 'mysql-connector-j'",
+        "Remove explicit version 8.0.33 (use Spring Boot BOM managed version)"
+      ],
+      "dependencies": ["springboot-version-upgrade"],
+      "successCriteria": "MySQL connector resolves from Maven Central with new coordinates",
+      "status": "pending"
+    },
+    {
+      "id": "hibernate-dialect-update",
+      "phase": 2,
+      "phaseTitle": "Spring Boot Upgrade",
+      "title": "Update deprecated Hibernate dialect",
+      "type": "upgrade",
+      "severity": "optional",
+      "effort": 2,
+      "agent": "modernize-java-upgrade",
+      "appcatRuleIds": ["deprecated-mysql-dialect"],
+      "target": {
+        "dialect": "org.hibernate.dialect.MySQLDialect"
+      },
+      "affectedFiles": [
+        "src/main/resources/application.yml"
+      ],
+      "changes": [
+        "Replace 'org.hibernate.dialect.MySQL5InnoDBDialect' with 'org.hibernate.dialect.MySQLDialect'",
+        "Hibernate 6 auto-detects MySQL storage engine (InnoDB)"
+      ],
+      "dependencies": ["springboot-version-upgrade"],
+      "successCriteria": "Application starts and JPA operations work with MySQLDialect",
+      "status": "pending"
+    },
+    {
+      "id": "springboot-build-verification",
+      "phase": 2,
+      "phaseTitle": "Spring Boot Upgrade",
+      "title": "Full build verification after Spring Boot upgrade",
+      "type": "verification",
+      "severity": "mandatory",
+      "effort": 2,
+      "agent": "modernize-java-upgrade",
+      "appcatRuleIds": [],
+      "target": {},
+      "affectedFiles": [],
+      "changes": [
+        "Run mvn clean compile — verify no compilation errors",
+        "Run mvn test — verify all tests pass",
+        "Run mvn package -DskipTests — verify JAR builds",
+        "Verify application can start (smoke test)"
+      ],
+      "dependencies": [
+        "javax-to-jakarta-migration",
+        "mysql-connector-rename",
+        "hibernate-dialect-update"
+      ],
+      "successCriteria": "mvn clean package succeeds with zero errors on Spring Boot 3.2+ / Java 17",
+      "status": "pending"
+    },
+    {
+      "id": "fix-http-urls-and-externalize",
+      "phase": 3,
+      "phaseTitle": "Code Quality & Cloud Readiness",
+      "title": "Fix HTTP → HTTPS URLs and externalize config",
+      "type": "code-quality",
+      "severity": "mandatory",
+      "effort": 5,
+      "agent": "general-purpose",
+      "appcatRuleIds": [
+        "localhost-http-00001",
+        "unsecure-network-protocol-00000",
+        "hardcoded-urls-00001"
+      ],
+      "target": {},
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/SupplyChainBackendApplication.java",
+        "src/main/java/com/acme/scm/service/VendorService.java",
+        "src/main/resources/application.yml"
+      ],
+      "changes": [
+        "Remove hardcoded 'http://localhost:8080/api' from SupplyChainBackendApplication.java",
+        "Move 'http://vendor-rating-service/api/ratings/' from VendorService.java to application.yml",
+        "Add configurable vendor-rating-service base URL in application.yml",
+        "Replace all http:// with https:// in service URLs",
+        "Inject URL from @Value annotation in VendorService"
+      ],
+      "dependencies": ["springboot-build-verification"],
+      "successCriteria": "No hardcoded HTTP URLs in source code; all external URLs are HTTPS and configurable",
+      "status": "pending"
+    },
+    {
+      "id": "field-to-constructor-injection",
+      "phase": 3,
+      "phaseTitle": "Code Quality & Cloud Readiness",
+      "title": "Convert @Autowired field injection → constructor injection",
+      "type": "code-quality",
+      "severity": "optional",
+      "effort": 5,
+      "agent": "general-purpose",
+      "appcatRuleIds": ["field-injection-pattern"],
+      "target": {},
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/service/VendorService.java",
+        "src/main/java/com/acme/scm/service/PurchaseOrderService.java",
+        "src/main/java/com/acme/scm/service/InventoryService.java",
+        "src/main/java/com/acme/scm/controller/VendorController.java",
+        "src/main/java/com/acme/scm/controller/PurchaseOrderController.java",
+        "src/main/java/com/acme/scm/controller/InventoryController.java"
+      ],
+      "changes": [
+        "Remove @Autowired annotations from all injected fields",
+        "Make injected fields 'private final'",
+        "Add @RequiredArgsConstructor (Lombok) to each class",
+        "Keep @Value-annotated fields non-final (not included in constructor)"
+      ],
+      "dependencies": ["springboot-build-verification"],
+      "successCriteria": "All 6 classes use constructor injection; build compiles; tests pass",
+      "status": "pending"
+    },
+    {
+      "id": "system-out-to-slf4j",
+      "phase": 3,
+      "phaseTitle": "Code Quality & Cloud Readiness",
+      "title": "Replace System.out.println with SLF4J logging",
+      "type": "code-quality",
+      "severity": "optional",
+      "effort": 2,
+      "agent": "general-purpose",
+      "appcatRuleIds": ["system-out-println"],
+      "target": {},
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/SupplyChainBackendApplication.java"
+      ],
+      "changes": [
+        "Add @Slf4j annotation to SupplyChainBackendApplication",
+        "Replace System.out.println calls with log.info() using structured messages"
+      ],
+      "dependencies": ["springboot-build-verification"],
+      "successCriteria": "No System.out.println calls in codebase; startup messages use SLF4J",
+      "status": "pending"
+    },
+    {
+      "id": "resttemplate-to-restclient",
+      "phase": 3,
+      "phaseTitle": "Code Quality & Cloud Readiness",
+      "title": "Migrate RestTemplate → RestClient",
+      "type": "code-quality",
+      "severity": "optional",
+      "effort": 5,
+      "agent": "general-purpose",
+      "appcatRuleIds": ["rest-template-usage"],
+      "target": {},
+      "affectedFiles": [
+        "src/main/java/com/acme/scm/config/AppConfig.java",
+        "src/main/java/com/acme/scm/service/VendorService.java"
+      ],
+      "changes": [
+        "Replace RestTemplate bean with RestClient bean in AppConfig.java",
+        "Update VendorService to use RestClient.get().uri(...).retrieve().body() pattern",
+        "Remove RestTemplate import from VendorService.java"
+      ],
+      "dependencies": ["springboot-build-verification", "fix-http-urls-and-externalize"],
+      "successCriteria": "VendorService works with RestClient; no RestTemplate references remain",
+      "status": "pending"
+    },
+    {
+      "id": "rabbitmq-to-azure-servicebus",
+      "phase": 4,
+      "phaseTitle": "Azure Service Migrations",
+      "title": "Migrate RabbitMQ → Azure Service Bus",
+      "type": "azure-migration",
+      "severity": "optional",
+      "effort": 30,
+      "agent": "modernize-azure-java-cli",
+      "tool": "appmod-run-task",
+      "appcatRuleIds": [
+        "azure-message-queue-rabbitmq-01000",
+        "azure-message-queue-amqp-02000"
+      ],
+      "target": {
+        "source_technology": "RabbitMQ (spring-boot-starter-amqp)",
+        "target_technology": "Azure Service Bus",
+        "queues": ["order.created", "inventory.alert", "approval.pending"]
+      },
+      "affectedFiles": [
+        "pom.xml",
+        "src/main/resources/application.yml",
+        "src/main/java/com/acme/scm/config/AppConfig.java",
+        "src/main/java/com/acme/scm/service/PurchaseOrderService.java",
+        "src/main/java/com/acme/scm/service/InventoryService.java"
+      ],
+      "changes": [
+        "Replace spring-boot-starter-amqp with Azure Service Bus Spring Cloud starter in pom.xml",
+        "Remove RabbitMQ connection config from application.yml",
+        "Add Azure Service Bus connection config to application.yml",
+        "Remove RabbitMQ beans (Queue, RabbitTemplate, MessageConverter) from AppConfig.java",
+        "Add Azure Service Bus sender/processor beans to AppConfig.java",
+        "Replace rabbitTemplate.convertAndSend() calls in PurchaseOrderService.java",
+        "Replace rabbitTemplate.convertAndSend() calls in InventoryService.java",
+        "Migrate 3 queues: order.created, inventory.alert, approval.pending"
+      ],
+      "dependencies": ["springboot-build-verification"],
+      "successCriteria": "All 3 message queues functional on Azure Service Bus; no RabbitMQ references in code; build passes",
+      "status": "pending"
+    },
+    {
+      "id": "credentials-to-azure-keyvault",
+      "phase": 4,
+      "phaseTitle": "Azure Service Migrations",
+      "title": "Externalize credentials to Azure Key Vault & configure Azure MySQL",
+      "type": "azure-migration",
+      "severity": "potential",
+      "effort": 20,
+      "agent": "modernize-azure-java-cli",
+      "tool": "appmod-run-task",
+      "appcatRuleIds": [
+        "azure-password-01000",
+        "rabbitmq-hardcoded-credentials",
+        "azure-database-mysql-01000"
+      ],
+      "target": {
+        "source_technology": "Hardcoded credentials in application.yml",
+        "target_technology": "Azure Key Vault with Managed Identity",
+        "secrets_to_migrate": [
+          "spring.datasource.password",
+          "spring.rabbitmq.password (or Service Bus connection string)"
+        ]
+      },
+      "affectedFiles": [
+        "pom.xml",
+        "src/main/resources/application.yml"
+      ],
+      "changes": [
+        "Add azure-spring-cloud-starter-keyvault-secrets dependency to pom.xml",
+        "Add azure-identity dependency for Managed Identity support",
+        "Remove cleartext passwords from application.yml",
+        "Add Azure Key Vault endpoint configuration",
+        "Update MySQL datasource URL for Azure Database for MySQL Flexible Server",
+        "Enable SSL for MySQL connection (useSSL=true, requireSSL=true)",
+        "Configure passwordless auth with Managed Identity (optional)"
+      ],
+      "dependencies": ["springboot-build-verification"],
+      "successCriteria": "No cleartext passwords in application.yml; secrets resolved from Azure Key Vault at runtime",
+      "status": "pending"
+    }
+  ]
+}

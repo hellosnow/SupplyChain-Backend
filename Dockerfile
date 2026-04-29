@@ -3,7 +3,7 @@
 # and mcr.microsoft.com/openjdk/jdk:17-distroless (runtime)
 # per guardrails requirements
 
-FROM maven:3.8-openjdk-8 AS build
+FROM maven:3-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN mvn dependency:go-offline
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:8-jre
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 

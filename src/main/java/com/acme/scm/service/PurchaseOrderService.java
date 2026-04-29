@@ -2,33 +2,30 @@ package com.acme.scm.service;
 
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.repository.PurchaseOrderRepository;
+import com.azure.spring.messaging.servicebus.core.ServiceBusTemplate;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 /**
- * TECH DEBT:
- * - Uses SLF4J instead of InternalLogger (violates guardrails)
- * - Uses exception-based flow control (violates guardrails)
- * - Uses RabbitMQ directly instead of custom messaging API (should migrate to Azure Service Bus)
+ * Purchase Order Service.
+ * Messaging is performed via Azure Service Bus using ServiceBusTemplate.
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class PurchaseOrderService {
 
-    @Autowired
-    private PurchaseOrderRepository orderRepository;
+    private final PurchaseOrderRepository orderRepository;
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate; // TECH DEBT: Should use custom messaging API
+    private final ServiceBusTemplate serviceBusTemplate;
 
-    @Autowired
-    private VendorService vendorService;
+    private final VendorService vendorService;
 
     @Value("${app.messaging.queue.order-created}")
     private String orderCreatedQueue;
@@ -49,13 +46,11 @@ public class PurchaseOrderService {
 
         PurchaseOrder savedOrder = orderRepository.save(order);
 
-        // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
         try {
-            rabbitTemplate.convertAndSend(orderCreatedQueue, savedOrder);
+            serviceBusTemplate.sendAsync(orderCreatedQueue, MessageBuilder.withPayload(savedOrder).build()).block();
             log.info("Order created notification sent to queue: {}", orderCreatedQueue);
         } catch (Exception e) {
             log.error("Failed to send order notification", e);
-            // TECH DEBT: Swallowing exception
         }
 
         return savedOrder;

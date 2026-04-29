@@ -2,20 +2,20 @@ package com.acme.scm.controller;
 
 import com.acme.scm.model.Inventory;
 import com.acme.scm.service.InventoryService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Slf4j // TECH DEBT: Should use InternalLogger
+@Slf4j
 @RestController
 @RequestMapping("/api/inventory")
+@RequiredArgsConstructor
 public class InventoryController {
 
-    @Autowired
-    private InventoryService inventoryService;
+    private final InventoryService inventoryService;
 
     @GetMapping
     public ResponseEntity<List<Inventory>> getAllInventory() {

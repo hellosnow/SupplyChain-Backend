@@ -5,12 +5,11 @@ spring:
   application:
     name: supplychain-backend
 
-  # TECH DEBT: Hardcoded credentials (violates guardrails)
-  # Should be migrated to Azure Key Vault
   datasource:
-    url: jdbc:mysql://mysql:3306/supplychain?useSSL=false&serverTimezone=UTC
-    username: root
-    password: root
+    url: ${MYSQL_URL:jdbc:mysql://mysql:3306/supplychain?useSSL=true&serverTimezone=UTC}
+    username: ${MYSQL_USERNAME:root}
+    # password: REDACTED - stored in Azure Key Vault
+    password: ${MYSQL_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -19,19 +18,26 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
-  # TECH DEBT: RabbitMQ hardcoded credentials
-  # Should be migrated to Azure Service Bus with custom messaging API
-  rabbitmq:
-    host: rabbitmq
-    port: 5672
-    username: guest
-    password: guest
+  # Azure Service Bus (replaces RabbitMQ)
+  cloud:
+    azure:
+      servicebus:
+        connection-string: ${AZURE_SERVICE_BUS_CONNECTION_STRING:}
+        entity-type: queue
+
+# Azure Key Vault
+# Replace <your-vault-name> with your actual Azure Key Vault name
+azure:
+  keyvault:
+    uri: ${AZURE_KEYVAULT_URI:https://<your-vault-name>.vault.azure.net}
 
 # Application configuration
 app:
+  vendor-rating-service:
+    base-url: https://vendor-rating-service/api/ratings
   messaging:
     queue:
       order-created: order.created
