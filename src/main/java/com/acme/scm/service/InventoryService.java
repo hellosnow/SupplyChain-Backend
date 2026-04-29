@@ -1,33 +1,32 @@
 package com.acme.scm.service;
 
+import com.acme.logging.InternalLogger;
 import com.acme.scm.model.Inventory;
 import com.acme.scm.repository.InventoryRepository;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * TECH DEBT:
- * - Uses SLF4J instead of InternalLogger
- * - Uses RabbitMQ directly instead of custom messaging API
- */
-@Slf4j // TECH DEBT: Should use InternalLogger
 @Service
 public class InventoryService {
+
+    private static final InternalLogger logger = InternalLogger.getLogger(InventoryService.class);
 
     @Autowired
     private InventoryRepository inventoryRepository;
 
     @Autowired
-    private RabbitTemplate rabbitTemplate; // TECH DEBT: Should use custom messaging API
+    @Qualifier("inventoryAlertSender")
+    private ServiceBusSenderClient inventoryAlertSender;
 
-    @Value("${app.messaging.queue.inventory-alert}")
-    private String inventoryAlertQueue;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public List<Inventory> getAllInventory() {
         return inventoryRepository.findAll();
@@ -48,15 +47,15 @@ public class InventoryService {
         List<Inventory> lowStockItems = getLowStockItems();
 
         if (!lowStockItems.isEmpty()) {
-            log.warn("Found {} low stock items", lowStockItems.size());
+            logger.warn("Found {} low stock items", lowStockItems.size());
 
-            // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
             for (Inventory item : lowStockItems) {
                 try {
-                    rabbitTemplate.convertAndSend(inventoryAlertQueue, item);
-                    log.info("Low stock alert sent for SKU: {}", item.getSku());
+                    String json = objectMapper.writeValueAsString(item);
+                    inventoryAlertSender.sendMessage(new ServiceBusMessage(json));
+                    logger.info("Low stock alert sent for SKU: {}", item.getSku());
                 } catch (Exception e) {
-                    log.error("Failed to send inventory alert for SKU: {}", item.getSku(), e);
+                    logger.error("Failed to send inventory alert for SKU: {}", item.getSku(), e);
                 }
             }
         }

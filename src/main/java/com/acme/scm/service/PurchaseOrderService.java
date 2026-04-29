@@ -1,11 +1,13 @@
 package com.acme.scm.service;
 
+import com.acme.logging.InternalLogger;
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.repository.PurchaseOrderRepository;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,29 +15,29 @@ import java.util.List;
 
 /**
  * TECH DEBT:
- * - Uses SLF4J instead of InternalLogger (violates guardrails)
  * - Uses exception-based flow control (violates guardrails)
- * - Uses RabbitMQ directly instead of custom messaging API (should migrate to Azure Service Bus)
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
 @Service
 public class PurchaseOrderService {
+
+    private static final InternalLogger logger = InternalLogger.getLogger(PurchaseOrderService.class);
 
     @Autowired
     private PurchaseOrderRepository orderRepository;
 
     @Autowired
-    private RabbitTemplate rabbitTemplate; // TECH DEBT: Should use custom messaging API
+    @Qualifier("orderCreatedSender")
+    private ServiceBusSenderClient orderCreatedSender;
 
     @Autowired
     private VendorService vendorService;
 
-    @Value("${app.messaging.queue.order-created}")
-    private String orderCreatedQueue;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Transactional
     public PurchaseOrder createOrder(PurchaseOrder order) {
-        log.info("Creating purchase order: {}", order.getOrderNumber());
+        logger.info("Creating purchase order: {}", order.getOrderNumber());
 
         // TECH DEBT: Exception-based flow control (should use Result<T> pattern)
         if (order.getTotalAmount().doubleValue() <= 0) {
@@ -49,12 +51,12 @@ public class PurchaseOrderService {
 
         PurchaseOrder savedOrder = orderRepository.save(order);
 
-        // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
         try {
-            rabbitTemplate.convertAndSend(orderCreatedQueue, savedOrder);
-            log.info("Order created notification sent to queue: {}", orderCreatedQueue);
+            String json = objectMapper.writeValueAsString(savedOrder);
+            orderCreatedSender.sendMessage(new ServiceBusMessage(json));
+            logger.info("Order created notification sent");
         } catch (Exception e) {
-            log.error("Failed to send order notification", e);
+            logger.error("Failed to send order notification", e);
             // TECH DEBT: Swallowing exception
         }
 
