@@ -1,0 +1,63 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/azure-app-modernization/main/tasks-schema.json",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-java21-springboot3",
+      "description": "Upgrade the application from Java 8 / Spring Boot 2.7.18 to Java 21 LTS / Spring Boot 3.x, including javax.* to jakarta.* namespace migration.",
+      "reason": "The organizational playbook targets Java 21 LTS. Spring Boot 3.x is required for Java 21 compatibility and for Azure Spring Cloud SDK v5+ support needed by subsequent migration tasks.",
+      "requirements": "Upgrade Java source and target from 8 to 21. Upgrade Spring Boot parent from 2.7.18 to the latest Spring Boot 3.x release. Migrate all javax.* imports to jakarta.* (JPA entities, validation annotations). Ensure the project compiles and all existing tests pass after the upgrade.",
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-rabbitmq-to-servicebus",
+      "description": "Migrate asynchronous messaging from RabbitMQ (Spring AMQP) to Azure Service Bus using managed identity authentication.",
+      "reason": "RabbitMQ is a self-hosted broker with hardcoded credentials. Azure Service Bus provides a fully managed messaging service that integrates with Azure managed identity, eliminating credential management and improving reliability.",
+      "requirements": "Replace spring-boot-starter-amqp with Spring Cloud Azure Service Bus integration. Migrate the three existing queues (order.created, inventory.alert, approval.pending) to Azure Service Bus queues or topics. Update all message producers and consumers. Use managed identity for authentication — no connection-string credentials. Remove RabbitMQ configuration from application.yml.",
+      "dependencies": ["001-upgrade-java21-springboot3"],
+      "skills": [
+        {
+          "name": "migration-amqp-rabbitmq-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-mysql-to-azure-mysql-mi",
+      "description": "Migrate the MySQL datasource from a local instance with hardcoded credentials to Azure Database for MySQL using managed identity for passwordless authentication.",
+      "reason": "The current datasource uses hardcoded root credentials (violating security policy). Azure Database for MySQL with managed identity provides a secure, credential-free connection aligned with the organizational policy of using DefaultAzureCredential.",
+      "requirements": "Replace mysql-connector-java with the Azure-compatible MySQL connector that supports managed identity. Add Spring Cloud Azure starter for MySQL. Update datasource configuration in application.yml to target Azure Database for MySQL. Remove all hardcoded username/password credentials. Use managed identity (DefaultAzureCredential) for authentication.",
+      "dependencies": ["001-upgrade-java21-springboot3"],
+      "skills": [
+        {
+          "name": "migration-mi-mysql",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    }
+  ],
+  "metadata": {
+    "planName": "test-cca-inline3",
+    "projectName": "SupplyChain Backend",
+    "language": "java",
+    "createdAt": "2026-04-30T04:30:17Z",
+    "version": "1.0"
+  }
+}
