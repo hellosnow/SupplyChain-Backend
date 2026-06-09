@@ -1,0 +1,156 @@
+# supplychain-backend
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+| Total Issues | 12 |
+| Mandatory Blockers | 5 |
+| Potential Issues | 3 |
+
+## Component Information
+
+| Property | Value |
+|----------|-------|
+| Language | Java, Python |
+| Frameworks | Spring Boot, Spring |
+| Build tools | Maven |
+| JDK version | 8 |
+
+## Cloud Readiness Issues
+
+| Issue Name | Criticality | Story Points | Occurrences |
+|------------|-------------|--------------|-------------|
+| Use of unsecured network protocols or URI libraries | Mandatory | 3 | [2](#Use_of_unsecured_network_protocols_or_URI_libraries) |
+| CRA: Default or well-known password detected | Mandatory | 3 | [2](#CRA_Default_or_well-known_password_detected) |
+| Local HTTP Calls | Mandatory | 3 | [1](#Local_HTTP_Calls) |
+| MySQL database found | Potential | 5 | [2](#MySQL_database_found) |
+| Password found in configuration file | Potential | 3 | [2](#Password_found_in_configuration_file) |
+| Detects usage of Jakarta Persistence (JPA) APIs | Potential | 5 | [1](#Detects_usage_of_Jakarta_Persistence_JPA_APIs) |
+| RabbitMQ usage found | Optional | 5 | [5](#RabbitMQ_usage_found) |
+| Spring AMQP dependency found | Optional | 5 | [2](#Spring_AMQP_dependency_found) |
+| Avoid using hardcoded URLs (HTTP protocol) in source code | Optional | 3 | [2](#Avoid_using_hardcoded_URLs_HTTP_protocol_in_source_code) |
+
+### Issue Details
+
+<details id="Use_of_unsecured_network_protocols_or_URI_libraries">
+<summary><b>Use of unsecured network protocols or URI libraries</b> — affected files</summary>
+
+- `src/main/java/com/acme/scm/service/VendorService.java (line 49)`
+- `src/main/java/com/acme/scm/SupplyChainBackendApplication.java (line 25)`
+
+</details>
+
+<details id="CRA_Default_or_well-known_password_detected">
+<summary><b>CRA: Default or well-known password detected</b> — affected files</summary>
+
+- `src/main/resources/application.yml (line 13)`
+- `src/main/resources/application.yml (line 31)`
+
+</details>
+
+<details id="Local_HTTP_Calls">
+<summary><b>Local HTTP Calls</b> — affected files</summary>
+
+- `src/main/java/com/acme/scm/SupplyChainBackendApplication.java (line 25)`
+
+</details>
+
+<details id="MySQL_database_found">
+<summary><b>MySQL database found</b> — affected files</summary>
+
+- `src/main/resources/application.yml (line 11)`
+
+</details>
+
+<details id="Password_found_in_configuration_file">
+<summary><b>Password found in configuration file</b> — affected files</summary>
+
+- `src/main/resources/application.yml (line 13)`
+- `src/main/resources/application.yml (line 31)`
+
+</details>
+
+<details id="Detects_usage_of_Jakarta_Persistence_JPA_APIs">
+<summary><b>Detects usage of Jakarta Persistence (JPA) APIs</b> — affected files</summary>
+
+- `pom.xml (line 40)`
+
+</details>
+
+<details id="RabbitMQ_usage_found">
+<summary><b>RabbitMQ usage found</b> — affected files</summary>
+
+- `pom.xml (line 53)`
+- `src/main/java/com/acme/scm/config/AppConfig.java (line 4)`
+- `src/main/java/com/acme/scm/config/AppConfig.java (line 5)`
+- `src/main/java/com/acme/scm/service/InventoryService.java (line 6)`
+- `src/main/java/com/acme/scm/service/PurchaseOrderService.java (line 6)`
+
+</details>
+
+<details id="Spring_AMQP_dependency_found">
+<summary><b>Spring AMQP dependency found</b> — affected files</summary>
+
+- `pom.xml (line 53)`
+
+</details>
+
+<details id="Avoid_using_hardcoded_URLs_HTTP_protocol_in_source_code">
+<summary><b>Avoid using hardcoded URLs (HTTP protocol) in source code</b> — affected files</summary>
+
+- `src/main/java/com/acme/scm/SupplyChainBackendApplication.java (line 25)`
+- `src/main/java/com/acme/scm/service/VendorService.java (line 49)`
+
+</details>
+
+## Upgrade Issues
+
+| Issue Name | Criticality | Story Points | Occurrences |
+|------------|-------------|--------------|-------------|
+| Spring Boot Version Has Reached the End of OSS Support | Mandatory | 8 | [5](#Spring_Boot_Version_Has_Reached_the_End_of_OSS_Support) |
+| Spring Framework Version Has Reached the End of OSS Support | Mandatory | 8 | [3](#Spring_Framework_Version_Has_Reached_the_End_of_OSS_Support) |
+| Java Version is not the latest LTS | Optional | 8 | [3](#Java_Version_is_not_the_latest_LTS) |
+
+### Issue Details
+
+<details id="Spring_Boot_Version_Has_Reached_the_End_of_OSS_Support">
+<summary><b>Spring Boot Version Has Reached the End of OSS Support</b> — affected files</summary>
+
+- `pom.xml (line 66)`
+- `pom.xml (line 53)`
+- `pom.xml (line 34)`
+- `pom.xml (line 40)`
+- `pom.xml (line 72)`
+
+</details>
+
+<details id="Spring_Framework_Version_Has_Reached_the_End_of_OSS_Support">
+<summary><b>Spring Framework Version Has Reached the End of OSS Support</b> — affected files</summary>
+
+- `pom.xml (line 40)`
+- `pom.xml (line 53)`
+- `pom.xml (line 34)`
+
+</details>
+
+<details id="Java_Version_is_not_the_latest_LTS">
+<summary><b>Java Version is not the latest LTS</b> — affected files</summary>
+
+- `pom.xml (line 24)`
+- `pom.xml (line 25)`
+- `pom.xml (line 26)`
+
+</details>
+
+---
+
+## Codebase Insights
+
+> **Note:** These documents are generated by AI and may contain inaccuracies or incomplete information. Please review carefully.
+
+> **Codebase Insights aren't available yet.**
+>
+> These documents are generated when assessment runs with **Full analysis** coverage. Re-run the assessment and set `analysisCoverage: full` to enable them.
+
+[Share feedback](https://aka.ms/ghcp-appmod/feedback)
