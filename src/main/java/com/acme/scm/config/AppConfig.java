@@ -1,69 +1,50 @@
 package com.acme.scm.config;
 
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import com.azure.messaging.servicebus.ServiceBusClientBuilder;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * TECH DEBT:
- * - RestTemplate bean (should use ServiceMesh SDK instead)
- * - RabbitMQ configuration (should migrate to Azure Service Bus with custom messaging API)
- */
 @Configuration
 public class AppConfig {
 
-    @Value("${app.messaging.queue.order-created}")
-    private String orderCreatedQueue;
-
-    @Value("${app.messaging.queue.inventory-alert}")
-    private String inventoryAlertQueue;
-
-    @Value("${app.messaging.queue.approval-pending}")
-    private String approvalPendingQueue;
-
-    /**
-     * TECH DEBT: RestTemplate bypasses the service mesh layer.
-     * Should be replaced with ServiceMesh SDK (com.acme.mesh.ServiceMesh)
-     * per guardrails requirements.
-     */
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
 
-    /**
-     * TECH DEBT: RabbitMQ configuration.
-     * Should migrate to Azure Service Bus with custom messaging API.
-     */
-    @Bean
-    public Queue orderCreatedQueue() {
-        return new Queue(orderCreatedQueue, true);
-    }
+    @Configuration
+    @Profile("azure")
+    static class AzureServiceBusConfig {
 
-    @Bean
-    public Queue inventoryAlertQueue() {
-        return new Queue(inventoryAlertQueue, true);
-    }
+        @Value("${spring.cloud.azure.servicebus.connection-string}")
+        private String connectionString;
 
-    @Bean
-    public Queue approvalPendingQueue() {
-        return new Queue(approvalPendingQueue, true);
-    }
+        @Value("${app.messaging.queue.order-created}")
+        private String orderCreatedQueue;
 
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(jackson2JsonMessageConverter());
-        return rabbitTemplate;
-    }
+        @Value("${app.messaging.queue.inventory-alert}")
+        private String inventoryAlertQueue;
 
-    @Bean
-    public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
+        @Bean
+        public ServiceBusSenderClient orderCreatedSender() {
+            return new ServiceBusClientBuilder()
+                    .connectionString(connectionString)
+                    .sender()
+                    .queueName(orderCreatedQueue)
+                    .buildClient();
+        }
+
+        @Bean
+        public ServiceBusSenderClient inventoryAlertSender() {
+            return new ServiceBusClientBuilder()
+                    .connectionString(connectionString)
+                    .sender()
+                    .queueName(inventoryAlertQueue)
+                    .buildClient();
+        }
     }
 }

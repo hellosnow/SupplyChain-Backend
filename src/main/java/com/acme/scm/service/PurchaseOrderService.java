@@ -2,60 +2,58 @@ package com.acme.scm.service;
 
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.repository.PurchaseOrderRepository;
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * TECH DEBT:
- * - Uses SLF4J instead of InternalLogger (violates guardrails)
- * - Uses exception-based flow control (violates guardrails)
- * - Uses RabbitMQ directly instead of custom messaging API (should migrate to Azure Service Bus)
- */
-@Slf4j // TECH DEBT: Should use InternalLogger
+@Slf4j
 @Service
 public class PurchaseOrderService {
 
     @Autowired
     private PurchaseOrderRepository orderRepository;
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate; // TECH DEBT: Should use custom messaging API
+    @Autowired(required = false)
+    @Qualifier("orderCreatedSender")
+    private ServiceBusSenderClient orderCreatedSender;
 
     @Autowired
     private VendorService vendorService;
 
-    @Value("${app.messaging.queue.order-created}")
-    private String orderCreatedQueue;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Transactional
     public PurchaseOrder createOrder(PurchaseOrder order) {
         log.info("Creating purchase order: {}", order.getOrderNumber());
 
-        // TECH DEBT: Exception-based flow control (should use Result<T> pattern)
         if (order.getTotalAmount().doubleValue() <= 0) {
             throw new IllegalArgumentException("Order amount must be greater than zero");
         }
 
-        // TECH DEBT: Exception-based validation (should use Result<T>)
         if (!vendorService.isVendorActive(order.getVendorId())) {
             throw new IllegalStateException("Vendor is not active: " + order.getVendorId());
         }
 
         PurchaseOrder savedOrder = orderRepository.save(order);
 
-        // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
         try {
-            rabbitTemplate.convertAndSend(orderCreatedQueue, savedOrder);
-            log.info("Order created notification sent to queue: {}", orderCreatedQueue);
+            if (orderCreatedSender != null) {
+                String messageBody = objectMapper.writeValueAsString(savedOrder);
+                orderCreatedSender.sendMessage(new ServiceBusMessage(messageBody));
+                log.info("Order created notification sent to Azure Service Bus");
+            } else {
+                log.debug("Service Bus sender not configured, skipping message send");
+            }
         } catch (Exception e) {
             log.error("Failed to send order notification", e);
-            // TECH DEBT: Swallowing exception
         }
 
         return savedOrder;
@@ -67,7 +65,7 @@ public class PurchaseOrderService {
 
     public PurchaseOrder getOrderByNumber(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new RuntimeException("Order not found: " + orderNumber)); // TECH DEBT: Exception flow
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderNumber));
     }
 
     public List<PurchaseOrder> getPendingOrders() {
@@ -78,7 +76,6 @@ public class PurchaseOrderService {
     public PurchaseOrder approveOrder(String orderNumber, String approvedBy) {
         PurchaseOrder order = getOrderByNumber(orderNumber);
 
-        // TECH DEBT: Exception-based flow control
         if (order.getStatus() != PurchaseOrder.OrderStatus.PENDING) {
             throw new IllegalStateException("Order is not in pending status");
         }
