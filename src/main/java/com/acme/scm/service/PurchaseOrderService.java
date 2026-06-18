@@ -1,8 +1,9 @@
 package com.acme.scm.service;
 
+import com.acme.commons.Result;
+import com.acme.logging.InternalLogger;
 import com.acme.scm.model.PurchaseOrder;
 import com.acme.scm.repository.PurchaseOrderRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +18,10 @@ import java.util.List;
  * - Uses exception-based flow control (violates guardrails)
  * - Uses RabbitMQ directly instead of custom messaging API (should migrate to Azure Service Bus)
  */
-@Slf4j // TECH DEBT: Should use InternalLogger
 @Service
 public class PurchaseOrderService {
+
+    private static final InternalLogger logger = InternalLogger.getLogger(PurchaseOrderService.class);
 
     @Autowired
     private PurchaseOrderRepository orderRepository;
@@ -34,17 +36,15 @@ public class PurchaseOrderService {
     private String orderCreatedQueue;
 
     @Transactional
-    public PurchaseOrder createOrder(PurchaseOrder order) {
-        log.info("Creating purchase order: {}", order.getOrderNumber());
+    public Result<PurchaseOrder> createOrder(PurchaseOrder order) {
+        logger.info("Creating purchase order: {}", order.getOrderNumber());
 
-        // TECH DEBT: Exception-based flow control (should use Result<T> pattern)
         if (order.getTotalAmount().doubleValue() <= 0) {
-            throw new IllegalArgumentException("Order amount must be greater than zero");
+            return Result.fail("Order amount must be greater than zero");
         }
 
-        // TECH DEBT: Exception-based validation (should use Result<T>)
         if (!vendorService.isVendorActive(order.getVendorId())) {
-            throw new IllegalStateException("Vendor is not active: " + order.getVendorId());
+            return Result.fail("Vendor is not active: " + order.getVendorId());
         }
 
         PurchaseOrder savedOrder = orderRepository.save(order);
@@ -52,22 +52,23 @@ public class PurchaseOrderService {
         // TECH DEBT: RabbitMQ direct usage (should use custom messaging API)
         try {
             rabbitTemplate.convertAndSend(orderCreatedQueue, savedOrder);
-            log.info("Order created notification sent to queue: {}", orderCreatedQueue);
+            logger.info("Order created notification sent to queue: {}", orderCreatedQueue);
         } catch (Exception e) {
-            log.error("Failed to send order notification", e);
+            logger.error("Failed to send order notification", e);
             // TECH DEBT: Swallowing exception
         }
 
-        return savedOrder;
+        return Result.ok(savedOrder);
     }
 
     public List<PurchaseOrder> getAllOrders() {
         return orderRepository.findAll();
     }
 
-    public PurchaseOrder getOrderByNumber(String orderNumber) {
+    public Result<PurchaseOrder> getOrderByNumber(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new RuntimeException("Order not found: " + orderNumber)); // TECH DEBT: Exception flow
+                .map(Result::ok)
+                .orElse(Result.fail("Order not found: " + orderNumber));
     }
 
     public List<PurchaseOrder> getPendingOrders() {
@@ -75,18 +76,22 @@ public class PurchaseOrderService {
     }
 
     @Transactional
-    public PurchaseOrder approveOrder(String orderNumber, String approvedBy) {
-        PurchaseOrder order = getOrderByNumber(orderNumber);
+    public Result<PurchaseOrder> approveOrder(String orderNumber, String approvedBy) {
+        Result<PurchaseOrder> orderResult = getOrderByNumber(orderNumber);
+        if (orderResult.isFailure()) {
+            return orderResult;
+        }
 
-        // TECH DEBT: Exception-based flow control
+        PurchaseOrder order = orderResult.getValue();
+
         if (order.getStatus() != PurchaseOrder.OrderStatus.PENDING) {
-            throw new IllegalStateException("Order is not in pending status");
+            return Result.fail("Order is not in pending status");
         }
 
         order.setStatus(PurchaseOrder.OrderStatus.APPROVED);
         order.setApprovedBy(approvedBy);
         order.setApprovedDate(java.time.LocalDateTime.now());
 
-        return orderRepository.save(order);
+        return Result.ok(orderRepository.save(order));
     }
 }

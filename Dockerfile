@@ -1,24 +1,35 @@
-# TECH DEBT: Uses old Java 8 base image
-# Should use mcr.microsoft.com/openjdk/jdk:17-ubuntu (build)
-# and mcr.microsoft.com/openjdk/jdk:17-distroless (runtime)
-# per guardrails requirements
+# Build stage: Use guardrails-approved base image with Maven installed
+FROM mcr.microsoft.com/openjdk/jdk:17-ubuntu AS build
 
-FROM maven:3.8-openjdk-8 AS build
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y maven && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Cache dependencies layer
 COPY pom.xml .
-RUN mvn dependency:go-offline
+RUN mvn dependency:go-offline -B
 
+# Build application
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -B
 
-FROM eclipse-temurin:8-jre
+# Runtime stage: Use guardrails-approved distroless base image
+FROM mcr.microsoft.com/openjdk/jdk:17-distroless
 
 WORKDIR /app
 
-COPY --from=build /app/target/supplychain-backend-1.0.0-LEGACY.jar app.jar
+# Copy the built JAR (use wildcard to avoid hardcoding version)
+COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# JVM tuning for containers — respect container memory limits
+ENTRYPOINT ["java", \
+    "-XX:+UseContainerSupport", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-Djava.security.egd=file:/dev/./urandom", \
+    "-jar", "app.jar"]
